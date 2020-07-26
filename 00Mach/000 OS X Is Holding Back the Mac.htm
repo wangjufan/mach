@@ -1,0 +1,247 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!-- saved from url=(0046)https://www.lowendmac.com/musings/05/1214.html -->
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml" xml="" xml:lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>OS X Is Holding Back the Mac</title>
+<meta name="description" content="OS X Is Holding Back the Mac, Dan Knight, Mac Musings, 2005.12.14. As nice as Mac OS X is, Apple&#39;s choice of the Mach microkernel makes it slower than it could be.">
+<meta name="author" content="Dan Knight">
+</head>
+<body>
+<div id="content">
+<div id="main-text">
+<h2 class="columntitle"><a href="http://lowendmac.com/musings/">Mac Musings</a></h2>
+<h1>OS X Is Holding Back the Mac</h1>
+<p>Daniel Knight - 2005.12.14</p>
+<p>The personal computing world is divided into three major camps:
+Windows, Linux, and Macintosh. Windows accounts for about 90% of
+the installed base. Macs and Linux divide the remaining 10% or so
+between them.</p>
+<p>Why don't Linux and the Mac OS account for a greater share of
+the market?</p>
+<p>Conformity. Image. Marketing. People use Windows because
+everyone uses it, because it's seen as the "business" OS (thanks to
+IBM's adoption of Microsoft DOS way back in 1981), and because
+Microsoft, Intel, and dozens of hardware companies are pushing
+it.</p>
+<p>Macs are seen as nonconformist computers. Different hardware. A
+different OS that hasn't always played well with Windows. Something
+only creative types use, according to the stereotype.</p>
+<p>Linux users form another counterculture, one more technically
+inclined. They debate distributions, GUIs (Gnome vs. KDE), and
+hardware. They know that OS&nbsp;X should have been built on a
+Linux foundation - and they think Linux is accessible to the
+masses.</p>
+<p>They're wrong.</p>
+<p>I've done four Linux installations in my life. One was on my 10
+GB iPod, and while it was interesting for a few days, it was
+troublesome in the long run. Another was on my <a href="http://lowendmac.com/2002/power-macintosh-g4-mirrored-drive-doors/">Power Mac G4/1 GHz dual</a>. And that's
+where this story begins.</p>
+<h3>Ubuntu Linux for PPC</h3>
+<p>Step one is picking a Linux distribution, and I'd heard good
+things about Ubuntu. So I downloaded a disk image (ISO) file and
+used DragonBurn to create a bootable installation CD. Then I booted
+from the CD and tried to install Linux.</p>
+<p>I have a 250 GB drive inside this computer, but I didn't want to
+risk the installer messing up my configuration. I had a pair of 80
+GB drives in an external FireWire enclosure. First problem: How do
+I know which of the two drives to partition for Linux? I had files
+on one, nothing on the other, but the installer didn't identify the
+drives by name.</p>
+<p>I picked the wrong one - oh well. The installer did its thing,
+partitioning the drive and then installing Linux on my external
+drive. Theoretically I'd be able to boot both my eMac and my Power
+Mac from the same disk.</p>
+<p><i>Theoretically,</i> because after installing Ubuntu Linux, I
+discovered that you can't boot it from a FireWire drive. I did a
+lot of online research, and that's a pretty consistent message.</p>
+<p>If Ubuntu Linux won't boot from an external drive, why does it
+allow you to install to an external drive?</p>
+<p>Strike one.</p>
+<p>Yellow Dog Linux is supposed to work with a FireWire drive, and
+I may try that someday. It also means downloading four disk images
+and burning four install CDs.</p>
+<h3>Ubuntu Linux for x86</h3>
+<p>Leaman Crews suggested I try installing Ubuntu on my Acer Aspire
+laptop. The 40 GB drive came partitioned with a small first
+partition and two 17 GB partitions. I don't understand the
+reasoning behind that, although perhaps Windows is considered so
+problematic that it's best to have a backup partition.</p>
+<p>Once again I downloaded an ISO file and burned a bootable
+installer CD. Then I diddled around trying to figure out how to
+boot the Acer from a CD. Mac users don't know how easy we have it
+being able to just hold the C key and boot from a CD or DVD.</p>
+<p>I finally discovered that you have to press F2 during startup
+and configure the laptop to look at the Combo drive before trying
+to boot from the hard drive. Nothing intuitive about how to change
+that either - but that's not a reflection on Linux.</p>
+<p>It was really cool watching the Acer boot into Linux, and then I
+discovered the first problem: The installer assumes a 24- or
+25-line by 80 character display, yet the widescreen display on the
+Acer was maybe 18 or 20 lines by 80 characters. That meant there
+were several lines of text that I couldn't see.</p>
+<p>Tip to the folks at Ubuntu: Create an installer that works with
+widescreen laptops. Use a smaller font so we can see 24 or 25 lines
+like people with regular displays.</p>
+<p>Being unable to see what I was selecting meant that I spent a
+lot of time going in circles, but I eventually got Ubuntu installed
+and running on the Acer. It was neat to see - but also fuzzy.
+Somehow it hadn't detected the 1280 x 800 native resolution of my
+display, so it was scaling 1024 x 768 to full screen. Kinda
+fuzzy.</p>
+<p>Strike two.</p>
+<h3>Ubuntu Redux</h3>
+<p>I searched online for a way to rerun just the part of the
+installer that handled video drivers, but I couldn't find anything.
+I did find a few pages explaining how to go into the terminal and
+type in cryptic commands that had to be entered just so and varied
+for each and every graphics processor out there.</p>
+<p>Not for me. Linux is supposed to be user-friendly these days. I
+don't want to use the terminal with Linux any more than I want to
+use it on OS&nbsp;X or use DOS on a Windows computer.</p>
+<p>In the end I concluded that I'd have to run the installer again
+and do a complete installation. Ubuntu wanted to repartition my
+Linux partition into a system partition and a scratch partition,
+somehow ignoring the fact that my previous installation had already
+created a scratch partition.</p>
+<p>I eventually worked around that problem by simply removing both
+of those partitions and having the installer create them from
+scratch. That took some time, because I was making blind choices
+with text that didn't appear on my widescreen display.</p>
+<p>This time when it came to configuring video, I understood that
+you use the tab and arrow keys to move the cursor and the space bar
+to toggle resolutions on and off. I picked just the 1280 x 800
+native resolution, and in the end I had a sharp display.</p>
+<h3>How Friendly Is Linux?</h3>
+<p>Ubuntu installs all sorts of useful applications - Firefox, chat
+and email software, an Office suite, several games. It's a bit
+different from what a Mac user is used to, but not too divergent
+from the Windows experience. I'd say Ubuntu is definitely less
+pretty than OS&nbsp;X or Windows, but every bit as usable.</p>
+<p>I fiddled around. I played. I installed other browsers. I
+configure the messaging client. And then I tried to install things
+that hadn't come with the distribution. That's when I discovered
+that while <i>using</i> Linux may be as simple as Windows,
+installing software isn't.</p>
+<p>The more I use Opera, the more I like it, but I couldn't get it
+installed. Not a big deal, since I had three other browsers, but
+not a good sign. Why can't Linux software have the same kind of
+simple installers Mac and Windows users are accustomed to?</p>
+<p>Next I decided to see how well Linux handled Yahoo Games. The
+various browsers were kind enough to make it easy to install Flash
+when a website needed it, but Yahoo Games require Java - and Sun
+doesn't have a simple installer for Linux, and the Java that comes with Ubuntu Linux wasn't recognized by Yahoo.</p>
+<p>I looked over the step-by-step instructions and tried to follow
+them in the terminal, but for whatever reason I couldn't get Java
+installed.</p>
+<p>Strike three.</p>
+<h3>Room for Improvement</h3>
+<p>What was all this nonsense about Linux being user-friendly and
+accessible to the masses? I'll grant that once it's installed, it's
+probably as easy to use as Windows (which I, as a Mac user, find
+pretty cryptic), and I can definitely make my way around in it.</p>
+<p>But what's up with installers that let you put the OS on a drive
+you can't boot from? Or not being able to add a resolution for your
+display if you botched your installation? Or not being able to
+easily install something as important as Java?</p>
+<h3>The Macintel Future</h3>
+<p>We live in a three OS, two hardware platform world, but that's
+going to start changing in 2006. Apple will begin migrating Macs to
+Intel CPUs, and the new "Macintel" computers will be able to run
+Windows, Linux x86, and Mac OS&nbsp;X.</p>
+<p>Windows does a lot of things right, but the underlying operating
+system is so full of holes it makes Swiss cheese look solid. Linux
+does a lot of things right, but there are still those geeky things
+that require you to use the terminal.</p>
+<p>Mac OS X does almost everything right. It's so secure that not a
+single virus has survived in the wild. Every program written for
+OS&nbsp;X (as opposed to ported from Linux or Unix) installs
+easily. The underlying kernel is a bit of a hack, ported from
+NeXT's x86-based OS to the PowerPC, and moving the Mac to Intel
+CPUs will improve things.</p>
+<p>The question is how the future will play out. Linux is already
+broken into many camps - KDE aficionados vs. Gnome users, Debian
+vs. Slackware vs. Gentoo plus dozens of other distributions. But
+the core of Linux is solid, powerful, efficient, and doesn't get as
+bogged down with multithreading as the Mac OS.</p>
+<p>In many ways, OS X is what Linux would be with a great GUI.
+Likewise, Linux is in some ways what OS&nbsp;X could be. For all
+its strengths, OS&nbsp;X does allow tasks to so dominate the OS
+that everything else stops while the beach ball spins.</p>
+<h3>Apple + Intel + Linux</h3>
+<p>It was once unthinkable that Apple would switch to Intel CPUs,
+but Apple's engineers with NeXT roots have been developing
+OS&nbsp;X (then called OpenStep) on Intel hardware longer than they
+have on PowerPC.</p>
+<p>When Steve Jobs started NeXT, he soon realized that no existing
+OS matched his vision and determined that the Mach kernel (a
+variant of Unix) would be the best foundation for his new
+object-oriented operating system. That was 1986, and the NeXT
+computers ran their Unix-derived OS on Motorola 68030 CPUs - the
+same used in Macs.</p>
+<p>In 1991, Linus Torvalds began writing the Linux kernel, a
+Unix-like operating system designed for the popular, powerful Intel
+80386 CPU. The first version of Linux was released in Sept. 1991,
+and since then programmers around the world have contributed to
+extending and improving Linux. This is arguably the most extensive
+and successful open source project to date.</p>
+<p>By 1992 NeXT has begun porting NeXTstep to Intel CPUs, and there
+was another project to port it to PowerPC. However, that project
+was halted when NeXTstep 3.1 (a.k.a. NeXTstep 486) was released in
+1993.</p>
+<p>NeXT's next project was separating the rest of the operating
+system from the kernel, which helped create OpenStep.</p>
+<p>NeXT was committed to the Mach kernel five years before Linus
+Torvalds began his OS, and it took a while before Linux began to
+approach the maturity of other Unix-like operating systems, so
+there would have been no reason for NeXT to consider switching from
+Mach.</p>
+<p>In the 14 years since the first Linux release, Linux has grown
+into a full-fledged operating system that has been tweaked and
+optimized by a host of programmers - and their work reviewed by
+other programmers. In fact, Linux is so robust that IBM has embraced
+it.</p>
+<p>Now let's put the pieces together. NeXT already learned how to
+put their interface on both Mach and Solaris kernels. Linux has
+grown into the most popular non-Microsoft operating system on x86
+hardware, but it's held back by dozens of distributions and two
+different GUIs.</p>
+<h3>Mach: OS X's Achilles' Heel</h3>
+<p>What if Apple were to build the equivalent of OpenStep for
+Linux? That is, take the whole of OS&nbsp;X and build it around a
+Linux kernel instead of Mach. (This would be the exact opposite of
+MkLinux, Apple's project to build a PowerPC version of Linux on the
+Mach microkernel that Apple abandoned after they acquired
+NeXT.)</p>
+<p>The problem with Mach is that microkernels are inefficient
+because of all the communication taking place between different
+parts of the operating system. A monolithic kernel is more
+efficient because processes don't have to move in and out of the
+kernel. <a href="https://en.wikipedia.org/wiki/Microkernel">The
+current Wikipedia article</a> puts it thus:</p>
+<p class="quote">Microkernels generally underperform in comparison
+to traditional designs, sometimes dramatically. This is due in
+large part to the overhead of moving in and out of the kernel, a
+context switch, in order to move data between the various
+applications and servers. It was originally believed that careful
+tuning could reduce this overhead dramatically, but by the mid-90s
+most researchers had given up.</p>
+<p>It seems sensible to move OS X to a more efficient kernel than Mach (Apple has been making Mach more efficient since 10.0 shipped), but
+there's one big obstacle: Avie Tevanian, one of the developers of
+the Mach kernel, worked at NeXT and came to Apple with Steve Jobs.
+Egos and personalities seem to mean a lot at Apple these days, so
+unless Tevanian were to become convinced that microkernel
+architecture is hampering OS&nbsp;X and then convince Jobs of that
+truth, change is unlikely.</p>
+<p>We can dream, can't we? Dreams of the best kernel and the best
+GUI working together. An OS and installers that are truly ready for
+the masses. No more beach balls of death. Real competition for
+Microsoft Windows present and future.</p>
+<p>The transition to Intel would be the perfect time to make the
+switch.
+</p></div>
+</div>
+<div id="adbar">
+</div>
+
+
+
+</body></html>
