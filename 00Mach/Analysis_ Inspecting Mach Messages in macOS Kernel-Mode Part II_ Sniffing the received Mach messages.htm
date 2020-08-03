@@ -1,0 +1,1013 @@
+<!DOCTYPE html>
+<!-- saved from url=(0114)https://www.fortinet.com/blog/threat-research/inspect-mach-messages-in-macos-kernel-mode-%2Dpart-ii-%2Dsniffing-th -->
+<html lang="en" data-template="post-page" class=""><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><script type="text/javascript" src="./Analysis_ Inspecting Mach Messages in macOS Kernel-Mode Part II_ Sniffing the received Mach messages_files/moatframe.js"></script>
+    
+    <title>Analysis: Inspecting Mach Messages in macOS Kernel-Mode Part II: Sniffing the received Mach messages</title>
+    <meta name="keywords" content="Threat Research,Mac OS">
+    <meta name="description" content="In part I of this blog, we discussed how to inspect the sending of Mach messages in kernel-mode perspective. In part II, I will continue to define how to inspect received Mach messages by setting up a kernel inline hook. ">
+    <meta name="template" content="post-page">
+    
+
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+
+<meta name="google-site-verification" content="tiQ03tSujT2TSsWJ6tNHiiUn8cwYVmdMQrGUCNrPQmo">
+
+<meta property="og:site_name" content="Fortinet Blog">
+<meta property="og:title" content="Analysis: Inspecting Mach Messages in macOS Kernel-Mode Part II: Sniffing the received Mach messages">
+<meta property="og:url" content="https://www.fortinet.com/blog/threat-research/inspect-mach-messages-in-macos-kernel-mode--part-ii--sniffing-th.html">
+<meta property="og:type" content="article">
+<meta property="og:description" content="In part I of this blog, we discussed how to inspect the sending of Mach messages in kernel-mode perspective. In part II, I will continue to define how to inspect received Mach messages by setting u…">
+<meta property="og:image" content="https://www.fortinet.com/content/dam/fortinet-blog/article-images/kai_lu_mac_sniff_blogs/kai_01.png">
+
+<meta property="twitter:card" content="summary">
+<meta property="twitter:site" content="@Fortinet">
+
+<meta property="article:author" content="Kai Lu">
+
+    <meta property="article:section" content="Threat Research">
+
+
+    <meta property="article:published_time" content="2018-10-26T00:00:00.000-07:00">
+
+
+    <meta property="article:tag" content="Mac OS">
+
+
+<link rel="shortcut icon" href="https://www.fortinet.com/etc/designs/fortinet-blog/favicon.ico">
+
+
+    
+<link rel="stylesheet" href="./Analysis_ Inspecting Mach Messages in macOS Kernel-Mode Part II_ Sniffing the received Mach messages_files/clientlib-base.min.css" type="text/css">
+
+
+
+
+
+
+
+
+<!--Launch Configuration-->
+
+
+    
+
+
+        <script type="text/javascript" src="./Analysis_ Inspecting Mach Messages in macOS Kernel-Mode Part II_ Sniffing the received Mach messages_files/launch-EN23cb8375449840dc93b13f34d935b8b9.min.js" async=""></script>
+
+
+<!--END Launch Configuration-->
+    
+    
+    
+
+    
+    
+
+    
+    
+    
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+<script src="./Analysis_ Inspecting Mach Messages in macOS Kernel-Mode Part II_ Sniffing the received Mach messages_files/AppMeasurement.min.js" async=""></script><script src="./Analysis_ Inspecting Mach Messages in macOS Kernel-Mode Part II_ Sniffing the received Mach messages_files/AppMeasurement_Module_ActivityMap.min.js" async=""></script><script src="./Analysis_ Inspecting Mach Messages in macOS Kernel-Mode Part II_ Sniffing the received Mach messages_files/RCb652faf409a54c3db318899e2cbcc95c-source.min.js" async=""></script><style type="text/css">.at-icon{fill:#fff;border:0}.at-icon-wrapper{display:inline-block;overflow:hidden}a .at-icon-wrapper{cursor:pointer}.at-rounded,.at-rounded-element .at-icon-wrapper{border-radius:12%}.at-circular,.at-circular-element .at-icon-wrapper{border-radius:50%}.addthis_32x32_style .at-icon{width:2pc;height:2pc}.addthis_24x24_style .at-icon{width:24px;height:24px}.addthis_20x20_style .at-icon{width:20px;height:20px}.addthis_16x16_style .at-icon{width:1pc;height:1pc}#at16lb{display:none;position:absolute;top:0;left:0;width:100%;height:100%;z-index:1001;background-color:#000;opacity:.001}#at_complete,#at_error,#at_share,#at_success{position:static!important}.at15dn{display:none}#at15s,#at16p,#at16p form input,#at16p label,#at16p textarea,#at_share .at_item{font-family:arial,helvetica,tahoma,verdana,sans-serif!important;font-size:9pt!important;outline-style:none;outline-width:0;line-height:1em}* html #at15s.mmborder{position:absolute!important}#at15s.mmborder{position:fixed!important;width:250px!important}#at15s{background:url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAYAAACNMs+9AAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAABtJREFUeNpiZGBgaGAgAjAxEAlGFVJHIUCAAQDcngCUgqGMqwAAAABJRU5ErkJggg==);float:none;line-height:1em;margin:0;overflow:visible;padding:5px;text-align:left;position:absolute}#at15s a,#at15s span{outline:0;direction:ltr;text-transform:none}#at15s .at-label{margin-left:5px}#at15s .at-icon-wrapper{width:1pc;height:1pc;vertical-align:middle}#at15s .at-icon{width:1pc;height:1pc}.at4-icon{display:inline-block;background-repeat:no-repeat;background-position:top left;margin:0;overflow:hidden;cursor:pointer}.addthis_16x16_style .at4-icon,.addthis_default_style .at4-icon,.at4-icon,.at-16x16{width:1pc;height:1pc;line-height:1pc;background-size:1pc!important}.addthis_32x32_style .at4-icon,.at-32x32{width:2pc;height:2pc;line-height:2pc;background-size:2pc!important}.addthis_24x24_style .at4-icon,.at-24x24{width:24px;height:24px;line-height:24px;background-size:24px!important}.addthis_20x20_style .at4-icon,.at-20x20{width:20px;height:20px;line-height:20px;background-size:20px!important}.at4-icon.circular,.circular .at4-icon,.circular.aticon{border-radius:50%}.at4-icon.rounded,.rounded .at4-icon{border-radius:4px}.at4-icon-left{float:left}#at15s .at4-icon{text-indent:20px;padding:0;overflow:visible;white-space:nowrap;background-size:1pc;width:1pc;height:1pc;background-position:top left;display:inline-block;line-height:1pc}.addthis_vertical_style .at4-icon,.at4-follow-container .at4-icon{margin-right:5px}html>body #at15s{width:250px!important}#at15s.atm{background:none!important;padding:0!important;width:10pc!important}#at15s_inner{background:#fff;border:1px solid #fff;margin:0}#at15s_head{position:relative;background:#f2f2f2;padding:4px;cursor:default;border-bottom:1px solid #e5e5e5}.at15s_head_success{background:#cafd99!important;border-bottom:1px solid #a9d582!important}.at15s_head_success a,.at15s_head_success span{color:#000!important;text-decoration:none}#at15s_brand,#at15sptx,#at16_brand{position:absolute}#at15s_brand{top:4px;right:4px}.at15s_brandx{right:20px!important}a#at15sptx{top:4px;right:4px;text-decoration:none;color:#4c4c4c;font-weight:700}#at15sptx:hover{text-decoration:underline}#at16_brand{top:5px;right:30px;cursor:default}#at_hover{padding:4px}#at_hover .at_item,#at_share .at_item{background:#fff!important;float:left!important;color:#4c4c4c!important}#at_share .at_item .at-icon-wrapper{margin-right:5px}#at_hover .at_bold{font-weight:700;color:#000!important}#at_hover .at_item{width:7pc!important;padding:2px 3px!important;margin:1px;text-decoration:none!important}#at_hover .at_item.athov,#at_hover .at_item:focus,#at_hover .at_item:hover{margin:0!important}#at_hover .at_item.athov,#at_hover .at_item:focus,#at_hover .at_item:hover,#at_share .at_item.athov,#at_share .at_item:hover{background:#f2f2f2!important;border:1px solid #e5e5e5;color:#000!important;text-decoration:none}.ipad #at_hover .at_item:focus{background:#fff!important;border:1px solid #fff}.at15t{display:block!important;height:1pc!important;line-height:1pc!important;padding-left:20px!important;background-position:0 0;text-align:left}.addthis_button,.at15t{cursor:pointer}.addthis_toolbox a.at300b,.addthis_toolbox a.at300m{width:auto}.addthis_toolbox a{margin-bottom:5px;line-height:initial}.addthis_toolbox.addthis_vertical_style{width:200px}.addthis_button_facebook_like .fb_iframe_widget{line-height:100%}.addthis_button_facebook_like iframe.fb_iframe_widget_lift{max-width:none}.addthis_toolbox a.addthis_button_counter,.addthis_toolbox a.addthis_button_facebook_like,.addthis_toolbox a.addthis_button_facebook_send,.addthis_toolbox a.addthis_button_facebook_share,.addthis_toolbox a.addthis_button_foursquare,.addthis_toolbox a.addthis_button_linkedin_counter,.addthis_toolbox a.addthis_button_pinterest_pinit,.addthis_toolbox a.addthis_button_tweet{display:inline-block}.addthis_toolbox span.addthis_follow_label{display:none}.addthis_toolbox.addthis_vertical_style span.addthis_follow_label{display:block;white-space:nowrap}.addthis_toolbox.addthis_vertical_style a{display:block}.addthis_toolbox.addthis_vertical_style.addthis_32x32_style a{line-height:2pc;height:2pc}.addthis_toolbox.addthis_vertical_style .at300bs{margin-right:4px;float:left}.addthis_toolbox.addthis_20x20_style span{line-height:20px}.addthis_toolbox.addthis_32x32_style span{line-height:2pc}.addthis_toolbox.addthis_pill_combo_style .addthis_button_compact .at15t_compact,.addthis_toolbox.addthis_pill_combo_style a{float:left}.addthis_toolbox.addthis_pill_combo_style a.addthis_button_tweet{margin-top:-2px}.addthis_toolbox.addthis_pill_combo_style .addthis_button_compact .at15t_compact{margin-right:4px}.addthis_default_style .addthis_separator{margin:0 5px;display:inline}div.atclear{clear:both}.addthis_default_style .addthis_separator,.addthis_default_style .at4-icon,.addthis_default_style .at300b,.addthis_default_style .at300bo,.addthis_default_style .at300bs,.addthis_default_style .at300m{float:left}.at300b img,.at300bo img{border:0}a.at300b .at4-icon,a.at300m .at4-icon{display:block}.addthis_default_style .at300b,.addthis_default_style .at300bo,.addthis_default_style .at300m{padding:0 2px}.at300b,.at300bo,.at300bs,.at300m{cursor:pointer}.addthis_button_facebook_like.at300b:hover,.addthis_button_facebook_like.at300bs:hover,.addthis_button_facebook_send.at300b:hover,.addthis_button_facebook_send.at300bs:hover{opacity:1}.addthis_20x20_style .at15t,.addthis_20x20_style .at300bs{overflow:hidden;display:block;height:20px!important;width:20px!important;line-height:20px!important}.addthis_32x32_style .at15t,.addthis_32x32_style .at300bs{overflow:hidden;display:block;height:2pc!important;width:2pc!important;line-height:2pc!important}.at300bs{overflow:hidden;display:block;background-position:0 0;height:1pc;width:1pc;line-height:1pc!important}.addthis_default_style .at15t_compact,.addthis_default_style .at15t_expanded{margin-right:4px}#at_share .at_item{width:123px!important;padding:4px;margin-right:2px;border:1px solid #fff}#at16p{background:url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAYAAACNMs+9AAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAABtJREFUeNpiZGBgaGAgAjAxEAlGFVJHIUCAAQDcngCUgqGMqwAAAABJRU5ErkJggg==);z-index:10000001;position:absolute;top:50%;left:50%;width:300px;padding:10px;margin:0 auto;margin-top:-185px;margin-left:-155px;font-family:arial,helvetica,tahoma,verdana,sans-serif;font-size:9pt;color:#5e5e5e}#at_share{margin:0;padding:0}#at16pt{position:relative;background:#f2f2f2;height:13px;padding:5px 10px}#at16pt a,#at16pt h4{font-weight:700}#at16pt h4{display:inline;margin:0;padding:0;font-size:9pt;color:#4c4c4c;cursor:default}#at16pt a{position:absolute;top:5px;right:10px;color:#4c4c4c;text-decoration:none;padding:2px}#at15sptx:focus,#at16pt a:focus{outline:thin dotted}#at15s #at16pf a{top:1px}#_atssh{width:1px!important;height:1px!important;border:0!important}.atm{width:10pc!important;padding:0;margin:0;line-height:9pt;letter-spacing:normal;font-family:arial,helvetica,tahoma,verdana,sans-serif;font-size:9pt;color:#444;background:url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAYAAACNMs+9AAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAABtJREFUeNpiZGBgaGAgAjAxEAlGFVJHIUCAAQDcngCUgqGMqwAAAABJRU5ErkJggg==);padding:4px}.atm-f{text-align:right;border-top:1px solid #ddd;padding:5px 8px}.atm-i{background:#fff;border:1px solid #d5d6d6;padding:0;margin:0;box-shadow:1px 1px 5px rgba(0,0,0,.15)}.atm-s{margin:0!important;padding:0!important}.atm-s a:focus{border:transparent;outline:0;transition:none}#at_hover.atm-s a,.atm-s a{display:block;text-decoration:none;padding:4px 10px;color:#235dab!important;font-weight:400;font-style:normal;transition:none}#at_hover.atm-s .at_bold{color:#235dab!important}#at_hover.atm-s a:hover,.atm-s a:hover{background:#2095f0;text-decoration:none;color:#fff!important}#at_hover.atm-s .at_bold{font-weight:700}#at_hover.atm-s a:hover .at_bold{color:#fff!important}.atm-s a .at-label{vertical-align:middle;margin-left:5px;direction:ltr}.at_PinItButton{display:block;width:40px;height:20px;padding:0;margin:0;background-image:url(//s7.addthis.com/static/t00/pinit00.png);background-repeat:no-repeat}.at_PinItButton:hover{background-position:0 -20px}.addthis_toolbox .addthis_button_pinterest_pinit{position:relative}.at-share-tbx-element .fb_iframe_widget span{vertical-align:baseline!important}#at16pf{height:auto;text-align:right;padding:4px 8px}.at-privacy-info{position:absolute;left:7px;bottom:7px;cursor:pointer;text-decoration:none;font-family:helvetica,arial,sans-serif;font-size:10px;line-height:9pt;letter-spacing:.2px;color:#666}.at-privacy-info:hover{color:#000}.body .wsb-social-share .wsb-social-share-button-vert{padding-top:0;padding-bottom:0}.body .wsb-social-share.addthis_counter_style .addthis_button_tweet.wsb-social-share-button{padding-top:40px}.body .wsb-social-share.addthis_counter_style .addthis_button_facebook_like.wsb-social-share-button{padding-top:21px}@media print{#at4-follow,#at4-share,#at4-thankyou,#at4-whatsnext,#at4m-mobile,#at15s,.at4,.at4-recommended{display:none!important}}@media screen and (max-width:400px){.at4win{width:100%}}@media screen and (max-height:700px) and (max-width:400px){.at4-thankyou-inner .at4-recommended-container{height:122px;overflow:hidden}.at4-thankyou-inner .at4-recommended .at4-recommended-item:first-child{border-bottom:1px solid #c5c5c5}}</style><style type="text/css">.at-branding-logo{font-family:helvetica,arial,sans-serif;text-decoration:none;font-size:10px;display:inline-block;margin:2px 0;letter-spacing:.2px}.at-branding-logo .at-branding-icon{background-image:url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAMAAAC67D+PAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAAZQTFRF////+GlNUkcc1QAAAB1JREFUeNpiYIQDBjQmAwMmkwEM0JnY1WIxFyDAABGeAFEudiZsAAAAAElFTkSuQmCC")}.at-branding-logo .at-branding-icon,.at-branding-logo .at-privacy-icon{display:inline-block;height:10px;width:10px;margin-left:4px;margin-right:3px;margin-bottom:-1px;background-repeat:no-repeat}.at-branding-logo .at-privacy-icon{background-image:url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAkAAAAKCAMAAABR24SMAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAABhQTFRF8fr9ot/xXcfn2/P5AKva////////AKTWodjhjAAAAAd0Uk5T////////ABpLA0YAAAA6SURBVHjaJMzBDQAwCAJAQaj7b9xifV0kUKJ9ciWxlzWEWI5gMF65KUTv0VKkjVeTerqE/x7+9BVgAEXbAWI8QDcfAAAAAElFTkSuQmCC")}.at-branding-logo span{text-decoration:none}.at-branding-logo .at-branding-addthis,.at-branding-logo .at-branding-powered-by{color:#666}.at-branding-logo .at-branding-addthis:hover{color:#333}.at-cv-with-image .at-branding-addthis,.at-cv-with-image .at-branding-addthis:hover{color:#fff}a.at-branding-logo:visited{color:initial}.at-branding-info{display:inline-block;padding:0 5px;color:#666;border:1px solid #666;border-radius:50%;font-size:10px;line-height:9pt;opacity:.7;transition:all .3s ease;text-decoration:none}.at-branding-info span{border:0;clip:rect(0 0 0 0);height:1px;margin:-1px;overflow:hidden;padding:0;position:absolute;width:1px}.at-branding-info:before{content:'i';font-family:Times New Roman}.at-branding-info:hover{color:#0780df;border-color:#0780df}</style><script async="" src="./Analysis_ Inspecting Mach Messages in macOS Kernel-Mode Part II_ Sniffing the received Mach messages_files/hotjar-1178304.js"></script><style type="text/css">@-webkit-keyframes bounce{0%,20%,50%,80%,to{-webkit-transform:translateY(0);transform:translateY(0)}40%{-webkit-transform:translateY(-30px);transform:translateY(-30px)}60%{-webkit-transform:translateY(-15px);transform:translateY(-15px)}}@keyframes bounce{0%,20%,50%,80%,to{-webkit-transform:translateY(0);transform:translateY(0)}40%{-webkit-transform:translateY(-30px);transform:translateY(-30px)}60%{-webkit-transform:translateY(-15px);transform:translateY(-15px)}}.om-animation-bounce{-webkit-animation-duration:1s;animation-duration:1s;-webkit-animation-fill-mode:both;animation-fill-mode:both;-webkit-animation-name:bounce;animation-name:bounce}@-webkit-keyframes bounceIn{0%{opacity:0;-webkit-transform:scale(.3);transform:scale(.3)}50%{opacity:1;-webkit-transform:scale(1.05);transform:scale(1.05)}70%{-webkit-transform:scale(.9);transform:scale(.9)}to{opacity:1;-webkit-transform:scale(1);transform:scale(1)}}@keyframes bounceIn{0%{opacity:0;-webkit-transform:scale(.3);transform:scale(.3)}50%{opacity:1;-webkit-transform:scale(1.05);transform:scale(1.05)}70%{-webkit-transform:scale(.9);transform:scale(.9)}to{opacity:1;-webkit-transform:scale(1);transform:scale(1)}}.om-animation-bounce-in{-webkit-animation-duration:1s;animation-duration:1s;-webkit-animation-name:bounceIn;animation-name:bounceIn}@-webkit-keyframes bounceInDown{0%{opacity:0;-webkit-transform:translateY(-2000px);transform:translateY(-2000px)}60%{opacity:1;-webkit-transform:translateY(30px);transform:translateY(30px)}80%{-webkit-transform:translateY(-10px);transform:translateY(-10px)}to{-webkit-transform:translateY(0);transform:translateY(0)}}@keyframes bounceInDown{0%{opacity:0;-webkit-transform:translateY(-2000px);transform:translateY(-2000px)}60%{opacity:1;-webkit-transform:translateY(30px);transform:translateY(30px)}80%{-webkit-transform:translateY(-10px);transform:translateY(-10px)}to{-webkit-transform:translateY(0);transform:translateY(0)}}.om-animation-bounce-in-down{-webkit-animation-duration:1s;animation-duration:1s;-webkit-animation-name:bounceInDown;animation-name:bounceInDown}@-webkit-keyframes bounceInLeft{0%{opacity:0;-webkit-transform:translateX(-2000px);transform:translateX(-2000px)}60%{opacity:1;-webkit-transform:translateX(30px);transform:translateX(30px)}80%{-webkit-transform:translateX(-10px);transform:translateX(-10px)}to{-webkit-transform:translateX(0);transform:translateX(0)}}@keyframes bounceInLeft{0%{opacity:0;-webkit-transform:translateX(-2000px);transform:translateX(-2000px)}60%{opacity:1;-webkit-transform:translateX(30px);transform:translateX(30px)}80%{-webkit-transform:translateX(-10px);transform:translateX(-10px)}to{-webkit-transform:translateX(0);transform:translateX(0)}}.om-animation-bounce-in-left{-webkit-animation-duration:1s;animation-duration:1s;-webkit-animation-name:bounceInLeft;animation-name:bounceInLeft}@-webkit-keyframes bounceInRight{0%{opacity:0;-webkit-transform:translateX(2000px);transform:translateX(2000px)}60%{opacity:1;-webkit-transform:translateX(-30px);transform:translateX(-30px)}80%{-webkit-transform:translateX(10px);transform:translateX(10px)}to{-webkit-transform:translateX(0);transform:translateX(0)}}@keyframes bounceInRight{0%{opacity:0;-webkit-transform:translateX(2000px);transform:translateX(2000px)}60%{opacity:1;-webkit-transform:translateX(-30px);transform:translateX(-30px)}80%{-webkit-transform:translateX(10px);transform:translateX(10px)}to{-webkit-transform:translateX(0);transform:translateX(0)}}.om-animation-bounce-in-right{-webkit-animation-duration:1s;animation-duration:1s;-webkit-animation-name:bounceInRight;animation-name:bounceInRight}@-webkit-keyframes bounceInUp{0%{opacity:0;-webkit-transform:translateY(2000px);transform:translateY(2000px)}60%{opacity:1;-webkit-transform:translateY(-30px);transform:translateY(-30px)}80%{-webkit-transform:translateY(10px);transform:translateY(10px)}to{-webkit-transform:translateY(0);transform:translateY(0)}}@keyframes bounceInUp{0%{opacity:0;-webkit-transform:translateY(2000px);transform:translateY(2000px)}60%{opacity:1;-webkit-transform:translateY(-30px);transform:translateY(-30px)}80%{-webkit-transform:translateY(10px);transform:translateY(10px)}to{-webkit-transform:translateY(0);transform:translateY(0)}}.om-animation-bounce-in-up{-webkit-animation-duration:1s;animation-duration:1s;-webkit-animation-name:bounceInUp;animation-name:bounceInUp}@-webkit-keyframes flash{0%,50%,to{opacity:1}25%,75%{opacity:0}}@keyframes flash{0%,50%,to{opacity:1}25%,75%{opacity:0}}.om-animation-flash{-webkit-animation-duration:1s;animation-duration:1s;-webkit-animation-fill-mode:both;animation-fill-mode:both;-webkit-animation-name:flash;animation-name:flash}@-webkit-keyframes flip{0%{-webkit-transform:perspective(800px) translateZ(0) rotateY(0) scale(1);transform:perspective(800px) translateZ(0) rotateY(0) scale(1);-webkit-animation-timing-function:ease-out;animation-timing-function:ease-out}40%{-webkit-transform:perspective(800px) translateZ(150px) rotateY(170deg) scale(1);transform:perspective(800px) translateZ(150px) rotateY(170deg) scale(1);-webkit-animation-timing-function:ease-out;animation-timing-function:ease-out}50%{-webkit-transform:perspective(800px) translateZ(150px) rotateY(190deg) scale(1);transform:perspective(800px) translateZ(150px) rotateY(190deg) scale(1);-webkit-animation-timing-function:ease-in;animation-timing-function:ease-in}80%{-webkit-transform:perspective(800px) translateZ(0) rotateY(1turn) scale(.95);transform:perspective(800px) translateZ(0) rotateY(1turn) scale(.95);-webkit-animation-timing-function:ease-in;animation-timing-function:ease-in}to{-webkit-transform:perspective(800px) translateZ(0) rotateY(1turn) scale(1);transform:perspective(800px) translateZ(0) rotateY(1turn) scale(1);-webkit-animation-timing-function:ease-in;animation-timing-function:ease-in}}@keyframes flip{0%{-webkit-transform:perspective(800px) translateZ(0) rotateY(0) scale(1);transform:perspective(800px) translateZ(0) rotateY(0) scale(1);-webkit-animation-timing-function:ease-out;animation-timing-function:ease-out}40%{-webkit-transform:perspective(800px) translateZ(150px) rotateY(170deg) scale(1);transform:perspective(800px) translateZ(150px) rotateY(170deg) scale(1);-webkit-animation-timing-function:ease-out;animation-timing-function:ease-out}50%{-webkit-transform:perspective(800px) translateZ(150px) rotateY(190deg) scale(1);transform:perspective(800px) translateZ(150px) rotateY(190deg) scale(1);-webkit-animation-timing-function:ease-in;animation-timing-function:ease-in}80%{-webkit-transform:perspective(800px) translateZ(0) rotateY(1turn) scale(.95);transform:perspective(800px) translateZ(0) rotateY(1turn) scale(.95);-webkit-animation-timing-function:ease-in;animation-timing-function:ease-in}to{-webkit-transform:perspective(800px) translateZ(0) rotateY(1turn) scale(1);transform:perspective(800px) translateZ(0) rotateY(1turn) scale(1);-webkit-animation-timing-function:ease-in;animation-timing-function:ease-in}}.om-animation-flip{-webkit-animation-duration:1s;animation-duration:1s;-webkit-backface-visibility:visible;backface-visibility:visible;-webkit-animation-name:flip;animation-name:flip}@-webkit-keyframes flipInX{0%{-webkit-transform:perspective(800px) rotateX(90deg);transform:perspective(800px) rotateX(90deg);opacity:0}40%{-webkit-transform:perspective(800px) rotateX(-10deg);transform:perspective(800px) rotateX(-10deg)}70%{-webkit-transform:perspective(800px) rotateX(10deg);transform:perspective(800px) rotateX(10deg)}to{-webkit-transform:perspective(800px) rotateX(0deg);transform:perspective(800px) rotateX(0deg);opacity:1}}@keyframes flipInX{0%{-webkit-transform:perspective(800px) rotateX(90deg);transform:perspective(800px) rotateX(90deg);opacity:0}40%{-webkit-transform:perspective(800px) rotateX(-10deg);transform:perspective(800px) rotateX(-10deg)}70%{-webkit-transform:perspective(800px) rotateX(10deg);transform:perspective(800px) rotateX(10deg)}to{-webkit-transform:perspective(800px) rotateX(0deg);transform:perspective(800px) rotateX(0deg);opacity:1}}.om-animation-flip-down{-webkit-animation-duration:1s;animation-duration:1s;-webkit-backface-visibility:visible;backface-visibility:visible;-webkit-animation-name:flipInX;animation-name:flipInX}@-webkit-keyframes flipInY{0%{-webkit-transform:perspective(800px) rotateY(90deg);transform:perspective(800px) rotateY(90deg);opacity:0}40%{-webkit-transform:perspective(800px) rotateY(-10deg);transform:perspective(800px) rotateY(-10deg)}70%{-webkit-transform:perspective(800px) rotateY(10deg);transform:perspective(800px) rotateY(10deg)}to{-webkit-transform:perspective(800px) rotateY(0deg);transform:perspective(800px) rotateY(0deg);opacity:1}}@keyframes flipInY{0%{-webkit-transform:perspective(800px) rotateY(90deg);transform:perspective(800px) rotateY(90deg);opacity:0}40%{-webkit-transform:perspective(800px) rotateY(-10deg);transform:perspective(800px) rotateY(-10deg)}70%{-webkit-transform:perspective(800px) rotateY(10deg);transform:perspective(800px) rotateY(10deg)}to{-webkit-transform:perspective(800px) rotateY(0deg);transform:perspective(800px) rotateY(0deg);opacity:1}}.om-animation-flip-side{-webkit-animation-duration:1s;animation-duration:1s;-webkit-backface-visibility:visible;backface-visibility:visible;-webkit-animation-name:flipInY;animation-name:flipInY}@-webkit-keyframes lightSpeedIn{0%{-webkit-transform:translateX(100%) skewX(-30deg);transform:translateX(100%) skewX(-30deg);opacity:0}60%{-webkit-transform:translateX(-20%) skewX(30deg);transform:translateX(-20%) skewX(30deg);opacity:1}80%{-webkit-transform:translateX(0) skewX(-15deg);transform:translateX(0) skewX(-15deg);opacity:1}to{-webkit-transform:translateX(0) skewX(0deg);transform:translateX(0) skewX(0deg);opacity:1}}@keyframes lightSpeedIn{0%{-webkit-transform:translateX(100%) skewX(-30deg);transform:translateX(100%) skewX(-30deg);opacity:0}60%{-webkit-transform:translateX(-20%) skewX(30deg);transform:translateX(-20%) skewX(30deg);opacity:1}80%{-webkit-transform:translateX(0) skewX(-15deg);transform:translateX(0) skewX(-15deg);opacity:1}to{-webkit-transform:translateX(0) skewX(0deg);transform:translateX(0) skewX(0deg);opacity:1}}.om-animation-light-speed{-webkit-animation-duration:1s;animation-duration:1s;-webkit-animation-name:lightSpeedIn;animation-name:lightSpeedIn;-webkit-animation-timing-function:ease-out;animation-timing-function:ease-out}@-webkit-keyframes pulse{0%{-webkit-transform:scale(1);transform:scale(1)}50%{-webkit-transform:scale(1.1);transform:scale(1.1)}to{-webkit-transform:scale(1);transform:scale(1)}}@keyframes pulse{0%{-webkit-transform:scale(1);transform:scale(1)}50%{-webkit-transform:scale(1.1);transform:scale(1.1)}to{-webkit-transform:scale(1);transform:scale(1)}}.om-animation-pulse{-webkit-animation-duration:1s;animation-duration:1s;-webkit-animation-fill-mode:both;animation-fill-mode:both;-webkit-animation-name:pulse;animation-name:pulse}@-webkit-keyframes rollIn{0%{opacity:0;-webkit-transform:translateX(-100%) rotate(-120deg);transform:translateX(-100%) rotate(-120deg)}to{opacity:1;-webkit-transform:translateX(0) rotate(0deg);transform:translateX(0) rotate(0deg)}}@keyframes rollIn{0%{opacity:0;-webkit-transform:translateX(-100%) rotate(-120deg);transform:translateX(-100%) rotate(-120deg)}to{opacity:1;-webkit-transform:translateX(0) rotate(0deg);transform:translateX(0) rotate(0deg)}}.om-animation-roll-in{-webkit-animation-duration:1s;animation-duration:1s;-webkit-animation-name:rollIn;animation-name:rollIn}@-webkit-keyframes rotateIn{0%{-webkit-transform-origin:center center;transform-origin:center center;-webkit-transform:rotate(-200deg);transform:rotate(-200deg);opacity:0}to{-webkit-transform-origin:center center;transform-origin:center center;-webkit-transform:rotate(0);transform:rotate(0);opacity:1}}@keyframes rotateIn{0%{-webkit-transform-origin:center center;transform-origin:center center;-webkit-transform:rotate(-200deg);transform:rotate(-200deg);opacity:0}to{-webkit-transform-origin:center center;transform-origin:center center;-webkit-transform:rotate(0);transform:rotate(0);opacity:1}}.om-animation-rotate{-webkit-animation-duration:1s;animation-duration:1s;-webkit-animation-name:rotateIn;animation-name:rotateIn}@-webkit-keyframes rotateInDownLeft{0%{-webkit-transform-origin:left bottom;transform-origin:left bottom;-webkit-transform:rotate(-90deg);transform:rotate(-90deg);opacity:0}to{-webkit-transform-origin:left bottom;transform-origin:left bottom;-webkit-transform:rotate(0);transform:rotate(0);opacity:1}}@keyframes rotateInDownLeft{0%{-webkit-transform-origin:left bottom;transform-origin:left bottom;-webkit-transform:rotate(-90deg);transform:rotate(-90deg);opacity:0}to{-webkit-transform-origin:left bottom;transform-origin:left bottom;-webkit-transform:rotate(0);transform:rotate(0);opacity:1}}.om-animation-rotate-down-left{-webkit-animation-duration:1s;animation-duration:1s;-webkit-animation-name:rotateInDownLeft;animation-name:rotateInDownLeft}@-webkit-keyframes rotateInDownRight{0%{-webkit-transform-origin:right bottom;transform-origin:right bottom;-webkit-transform:rotate(90deg);transform:rotate(90deg);opacity:0}to{-webkit-transform-origin:right bottom;transform-origin:right bottom;-webkit-transform:rotate(0);transform:rotate(0);opacity:1}}@keyframes rotateInDownRight{0%{-webkit-transform-origin:right bottom;transform-origin:right bottom;-webkit-transform:rotate(90deg);transform:rotate(90deg);opacity:0}to{-webkit-transform-origin:right bottom;transform-origin:right bottom;-webkit-transform:rotate(0);transform:rotate(0);opacity:1}}.om-animation-rotate-down-right{-webkit-animation-duration:1s;animation-duration:1s;-webkit-animation-name:rotateInDownRight;animation-name:rotateInDownRight}@-webkit-keyframes rotateInUpLeft{0%{-webkit-transform-origin:left bottom;transform-origin:left bottom;-webkit-transform:rotate(90deg);transform:rotate(90deg);opacity:0}to{-webkit-transform-origin:left bottom;transform-origin:left bottom;-webkit-transform:rotate(0);transform:rotate(0);opacity:1}}@keyframes rotateInUpLeft{0%{-webkit-transform-origin:left bottom;transform-origin:left bottom;-webkit-transform:rotate(90deg);transform:rotate(90deg);opacity:0}to{-webkit-transform-origin:left bottom;transform-origin:left bottom;-webkit-transform:rotate(0);transform:rotate(0);opacity:1}}.om-animation-rotate-up-left{-webkit-animation-duration:1s;animation-duration:1s;-webkit-animation-name:rotateInUpLeft;animation-name:rotateInUpLeft}@-webkit-keyframes rotateInUpRight{0%{-webkit-transform-origin:right bottom;transform-origin:right bottom;-webkit-transform:rotate(-90deg);transform:rotate(-90deg);opacity:0}to{-webkit-transform-origin:right bottom;transform-origin:right bottom;-webkit-transform:rotate(0);transform:rotate(0);opacity:1}}@keyframes rotateInUpRight{0%{-webkit-transform-origin:right bottom;transform-origin:right bottom;-webkit-transform:rotate(-90deg);transform:rotate(-90deg);opacity:0}to{-webkit-transform-origin:right bottom;transform-origin:right bottom;-webkit-transform:rotate(0);transform:rotate(0);opacity:1}}.om-animation-rotate-up-right{-webkit-animation-duration:1s;animation-duration:1s;-webkit-animation-name:rotateInUpRight;animation-name:rotateInUpRight}@-webkit-keyframes rubberBand{0%{-webkit-transform:scale(1);transform:scale(1)}30%{-webkit-transform:scaleX(1.25) scaleY(.75);transform:scaleX(1.25) scaleY(.75)}40%{-webkit-transform:scaleX(.75) scaleY(1.25);transform:scaleX(.75) scaleY(1.25)}60%{-webkit-transform:scaleX(1.15) scaleY(.85);transform:scaleX(1.15) scaleY(.85)}to{-webkit-transform:scale(1);transform:scale(1)}}@keyframes rubberBand{0%{-webkit-transform:scale(1);transform:scale(1)}30%{-webkit-transform:scaleX(1.25) scaleY(.75);transform:scaleX(1.25) scaleY(.75)}40%{-webkit-transform:scaleX(.75) scaleY(1.25);transform:scaleX(.75) scaleY(1.25)}60%{-webkit-transform:scaleX(1.15) scaleY(.85);transform:scaleX(1.15) scaleY(.85)}to{-webkit-transform:scale(1);transform:scale(1)}}.om-animation-rubber-band{-webkit-animation-duration:1s;animation-duration:1s;-webkit-animation-fill-mode:both;animation-fill-mode:both;-webkit-animation-name:rubberBand;animation-name:rubberBand}@-webkit-keyframes shake{0%,to{-webkit-transform:translateX(0);transform:translateX(0)}10%,30%,50%,70%,90%{-webkit-transform:translateX(-10px);transform:translateX(-10px)}20%,40%,60%,80%{-webkit-transform:translateX(10px);transform:translateX(10px)}}@keyframes shake{0%,to{-webkit-transform:translateX(0);transform:translateX(0)}10%,30%,50%,70%,90%{-webkit-transform:translateX(-10px);transform:translateX(-10px)}20%,40%,60%,80%{-webkit-transform:translateX(10px);transform:translateX(10px)}}.om-animation-shake{-webkit-animation-duration:1s;animation-duration:1s;-webkit-animation-fill-mode:both;animation-fill-mode:both;-webkit-animation-name:shake;animation-name:shake}@-webkit-keyframes slideInDown{0%{opacity:0;-webkit-transform:translateY(-2000px);transform:translateY(-2000px)}to{-webkit-transform:translateY(0);transform:translateY(0)}}@keyframes slideInDown{0%{opacity:0;-webkit-transform:translateY(-2000px);transform:translateY(-2000px)}to{-webkit-transform:translateY(0);transform:translateY(0)}}.om-animation-slide-in-down{-webkit-animation-duration:1s;animation-duration:1s;-webkit-animation-name:slideInDown;animation-name:slideInDown}@-webkit-keyframes slideInLeft{0%{opacity:0;-webkit-transform:translateX(-2000px);transform:translateX(-2000px)}to{-webkit-transform:translateX(0);transform:translateX(0)}}@keyframes slideInLeft{0%{opacity:0;-webkit-transform:translateX(-2000px);transform:translateX(-2000px)}to{-webkit-transform:translateX(0);transform:translateX(0)}}.om-animation-slide-in-left{-webkit-animation-duration:1s;animation-duration:1s;-webkit-animation-name:slideInLeft;animation-name:slideInLeft}@-webkit-keyframes slideInRight{0%{opacity:0;-webkit-transform:translateX(2000px);transform:translateX(2000px)}to{-webkit-transform:translateX(0);transform:translateX(0)}}@keyframes slideInRight{0%{opacity:0;-webkit-transform:translateX(2000px);transform:translateX(2000px)}to{-webkit-transform:translateX(0);transform:translateX(0)}}.om-animation-slide-in-right{-webkit-animation-duration:1s;animation-duration:1s;-webkit-animation-name:slideInRight;animation-name:slideInRight}@-webkit-keyframes swing{20%{-webkit-transform:rotate(15deg);transform:rotate(15deg)}40%{-webkit-transform:rotate(-10deg);transform:rotate(-10deg)}60%{-webkit-transform:rotate(5deg);transform:rotate(5deg)}80%{-webkit-transform:rotate(-5deg);transform:rotate(-5deg)}to{-webkit-transform:rotate(0deg);transform:rotate(0deg)}}@keyframes swing{20%{-webkit-transform:rotate(15deg);transform:rotate(15deg)}40%{-webkit-transform:rotate(-10deg);transform:rotate(-10deg)}60%{-webkit-transform:rotate(5deg);transform:rotate(5deg)}80%{-webkit-transform:rotate(-5deg);transform:rotate(-5deg)}to{-webkit-transform:rotate(0deg);transform:rotate(0deg)}}.om-animation-swing{-webkit-animation-duration:1s;animation-duration:1s;-webkit-transform-origin:top center;transform-origin:top center;-webkit-animation-name:swing;animation-name:swing}@-webkit-keyframes tada{0%{-webkit-transform:scale(1);transform:scale(1)}10%,20%{-webkit-transform:scale(.9) rotate(-3deg);transform:scale(.9) rotate(-3deg)}30%,50%,70%,90%{-webkit-transform:scale(1.1) rotate(3deg);transform:scale(1.1) rotate(3deg)}40%,60%,80%{-webkit-transform:scale(1.1) rotate(-3deg);transform:scale(1.1) rotate(-3deg)}to{-webkit-transform:scale(1) rotate(0);transform:scale(1) rotate(0)}}@keyframes tada{0%{-webkit-transform:scale(1);transform:scale(1)}10%,20%{-webkit-transform:scale(.9) rotate(-3deg);transform:scale(.9) rotate(-3deg)}30%,50%,70%,90%{-webkit-transform:scale(1.1) rotate(3deg);transform:scale(1.1) rotate(3deg)}40%,60%,80%{-webkit-transform:scale(1.1) rotate(-3deg);transform:scale(1.1) rotate(-3deg)}to{-webkit-transform:scale(1) rotate(0);transform:scale(1) rotate(0)}}.om-animation-tada{-webkit-animation-duration:1s;animation-duration:1s;-webkit-animation-name:tada;animation-name:tada}@-webkit-keyframes wobble{0%{-webkit-transform:translateX(0);transform:translateX(0)}15%{-webkit-transform:translateX(-25%) rotate(-5deg);transform:translateX(-25%) rotate(-5deg)}30%{-webkit-transform:translateX(20%) rotate(3deg);transform:translateX(20%) rotate(3deg)}45%{-webkit-transform:translateX(-15%) rotate(-3deg);transform:translateX(-15%) rotate(-3deg)}60%{-webkit-transform:translateX(10%) rotate(2deg);transform:translateX(10%) rotate(2deg)}75%{-webkit-transform:translateX(-5%) rotate(-1deg);transform:translateX(-5%) rotate(-1deg)}to{-webkit-transform:translateX(0);transform:translateX(0)}}@keyframes wobble{0%{-webkit-transform:translateX(0);transform:translateX(0)}15%{-webkit-transform:translateX(-25%) rotate(-5deg);transform:translateX(-25%) rotate(-5deg)}30%{-webkit-transform:translateX(20%) rotate(3deg);transform:translateX(20%) rotate(3deg)}45%{-webkit-transform:translateX(-15%) rotate(-3deg);transform:translateX(-15%) rotate(-3deg)}60%{-webkit-transform:translateX(10%) rotate(2deg);transform:translateX(10%) rotate(2deg)}75%{-webkit-transform:translateX(-5%) rotate(-1deg);transform:translateX(-5%) rotate(-1deg)}to{-webkit-transform:translateX(0);transform:translateX(0)}}.om-animation-wobble{-webkit-animation-duration:1s;animation-duration:1s;-webkit-animation-name:wobble;animation-name:wobble}.om-content-lock{color:transparent!important;text-shadow:rgba(0,0,0,.5) 0 0 10px;-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none;user-select:none;pointer-events:none;filter:url("data:image/svg+xml;utf9,<svg%20version='1.1'%20xmlns='http://www.w3.org/2000/svg'><filter%20id='blur'><feGaussianBlur%20stdDeviation='10'%20/></filter></svg>#blur");-webkit-filter:blur(10px);-ms-filter:blur(10px);-o-filter:blur(10px);filter:blur(10px)}html.om-mobile-position,html.om-mobile-position body{position:fixed!important}html.om-ios-form,html.om-ios-form body{-webkit-transform:translateZ(0)!important;transform:translateZ(0)!important;-webkit-overflow-scrolling:touch!important;height:100%!important;overflow:auto!important}html.om-position-popup body{overflow:hidden!important}html.om-position-floating-top{transition:padding-top .5s ease!important}html.om-position-floating-bottom{transition:padding-bottom .5s ease!important}html.om-reset-dimensions{height:100%!important;width:100%!important}.om-verification-confirmation{font-family:Lato,Arial,Helvetica,sans-serif;position:fixed;border-radius:10px;bottom:20px;left:20px;padding:10px 20px;opacity:0;transition:opacity .3s ease-in;background:#85bf31;color:#fff;font-size:18px;font-weight:700;z-index:9999}</style><script async="" src="./Analysis_ Inspecting Mach Messages in macOS Kernel-Mode Part II_ Sniffing the received Mach messages_files/modules.1624cd159d280bc0abdd.js" charset="utf-8"></script><style type="text/css">iframe#_hjRemoteVarsFrame {display: none !important; width: 1px !important; height: 1px !important; opacity: 0 !important; pointer-events: none !important;}</style><script src="https://ajax.googleapis.com/ajax/libs/webfont/1.5.18/webfont.js" async=""></script><script src="https://cdnjs.cloudflare.com/ajax/libs/mobile-detect/1.4.3/mobile-detect.min.js" async=""></script><script src="./Analysis_ Inspecting Mach Messages in macOS Kernel-Mode Part II_ Sniffing the received Mach messages_files/analytics.js" async=""></script></head>
+<body data-nav-status="closed" data-search-status="closed">
+
+
+
+
+
+<div class="root responsivegrid">
+
+
+<div class="aem-Grid aem-Grid--12 aem-Grid--default--12 ">
+    
+    <div class="b1-header aem-GridColumn aem-GridColumn--default--12">
+
+<header class="b1-header__container">
+    <div class="b1-header__logo">
+        <a href="https://www.fortinet.com/">
+            
+            <img class="desktop-logo" src="./Analysis_ Inspecting Mach Messages in macOS Kernel-Mode Part II_ Sniffing the received Mach messages_files/fortinet-logo-white.svg" alt="Analysis: Inspecting Mach Messages in macOS Kernel-Mode Part II: Sniffing the received Mach messages">
+            <img class="mobile-logo" src="./Analysis_ Inspecting Mach Messages in macOS Kernel-Mode Part II_ Sniffing the received Mach messages_files/fortinet-logo-white.svg" alt="Analysis: Inspecting Mach Messages in macOS Kernel-Mode Part II: Sniffing the received Mach messages">
+        </a>
+    </div>
+
+    <div class="b1-header__cta-list">
+      <a class="b1-header__cta-list-item " href="https://www.fortinet.com/blog">
+          <span>Blog</span>
+      </a>
+    </div>
+
+    <div class="b1-header__nav"><div class="b2-navigation">
+
+
+    <ul class="b2-navigation__list">
+        <li>
+            <a class="b2-navigation__list-item false" href="https://www.fortinet.com/blog/business-and-technology">
+                <span>Business &amp; Technology </span>
+            </a>
+        </li>
+    
+        <li>
+            <a class="b2-navigation__list-item false" href="https://www.fortinet.com/blog/threat-research">
+                <span>Threat Research</span>
+            </a>
+        </li>
+    
+        <li>
+            <a class="b2-navigation__list-item false" href="https://www.fortinet.com/blog/industry-trends">
+                <span>Industry Trends</span>
+            </a>
+        </li>
+    
+        <li>
+            <a class="b2-navigation__list-item false" href="https://www.fortinet.com/blog/partners">
+                <span>Partners</span>
+            </a>
+        </li>
+    <li><a class="b2-navigation__list-item false ftnt-subscription-btn"><span>Subscribe</span></a></li></ul>
+
+
+    
+
+</div>
+</div>
+
+    <div class="b1-header__search"><div class="b3-searchbox">
+
+<form class="b3-searchbox__form" action="https://www.fortinet.com/blog/search" method="get">
+    <input class="b3-searchbox__input" type="text" name="q" placeholder="Search Blogs">
+    <button class="b3-searchbox__icon" aria-label="Search" type="submit">
+        
+    <svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+        <path d="M15.688 14.18l-4.075-4.075C12.36 9.06 12.8 7.78 12.8 6.4 12.8 2.87 9.93 0 6.4 0 2.87 0 0 2.87 0 6.4c0 3.53 2.87 6.4 6.4 6.4 1.38 0 2.66-.44 3.705-1.187l4.075 4.075c.207.208.48.312.753.312.274 0 .547-.104.755-.312.416-.417.416-1.093 0-1.51zM2.133 6.4c0-2.357 1.91-4.267 4.267-4.267s4.267 1.91 4.267 4.267-1.91 4.267-4.267 4.267S2.133 8.757 2.133 6.4z" fill="#fff">
+        </path>
+    </svg>
+
+    </button>
+</form>
+
+
+    
+
+</div>
+</div>
+
+    <div class="b1-header__search-toggle">
+        
+    <svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+        <path d="M15.688 14.18l-4.075-4.075C12.36 9.06 12.8 7.78 12.8 6.4 12.8 2.87 9.93 0 6.4 0 2.87 0 0 2.87 0 6.4c0 3.53 2.87 6.4 6.4 6.4 1.38 0 2.66-.44 3.705-1.187l4.075 4.075c.207.208.48.312.753.312.274 0 .547-.104.755-.312.416-.417.416-1.093 0-1.51zM2.133 6.4c0-2.357 1.91-4.267 4.267-4.267s4.267 1.91 4.267 4.267-1.91 4.267-4.267 4.267S2.133 8.757 2.133 6.4z">
+        </path>
+    </svg>
+
+        <div class="b1-header__search-toggle-close">
+            <span class="b1-header__search-toggle-close-line"></span>
+            <span class="b1-header__search-toggle-close-line"></span>
+        </div>
+    </div>
+
+    <div class="b1-header__nav-toggle" aria-hidden="true">
+        <span class="b1-header__nav-toggle-line"></span>
+        <span class="b1-header__nav-toggle-line"></span>
+        <span class="b1-header__nav-toggle-line"></span>
+    </div>
+</header>
+
+    
+
+</div>
+<section class="b4-hero aem-GridColumn aem-GridColumn--default--12">
+
+
+
+<div class="b4-hero__container" style="background-image:url(/content/dam/fortinet-blog/article-images/kai_lu_mac_sniff_blogs/kai_01.png);">
+    <img class="ratio" alt="Analysis: Inspecting Mach Messages in macOS Kernel-Mode Part II: Sniffing the received Mach messages" aria-hidden="true" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAADCAQAAAAe/WZNAAAADklEQVR42mNkgAJGDAYAAFEABCaLYqoAAAAASUVORK5CYII=">
+    <div class="b4-hero__text text-container">
+        <p data-ly-test="" class="b4-hero__kicker">Threat Research</p>
+        
+        
+        <h1 class="b4-hero__headline">Analysis: Inspecting Mach Messages in macOS Kernel-Mode Part II: Sniffing the received Mach messages</h1>
+        
+    </div>
+</div>
+</section>
+<section class="b15-blog-meta aem-GridColumn aem-GridColumn--default--12">
+
+<div class="b15-blog-meta__container text-container">
+    <span>By </span>
+    <span class="b15-blog-meta__author">
+        <a href="https://www.fortinet.com/blog/search?author=Kai+Lu">Kai Lu</a>
+    </span>
+    <span class="b15-blog-meta__date"> | October 26, 2018</span>
+</div>
+</section>
+<div class="responsivegrid aem-GridColumn aem-GridColumn--default--12">
+
+
+<div class="aem-Grid aem-Grid--12 aem-Grid--default--12 ">
+    
+    <div class="cmp cmp-text aem-GridColumn aem-GridColumn--default--12">
+  <p>I<i>n this blog, we will review how to inspect the received Mach messages by setting up a kernel inline hooking for function&nbsp;mach_msg_receive_results().</i></p>
+<p>In <a href="https://www.fortinet.com/blog/threat-research/inspecting-mach-messages-in-macos-kernel-mode--part-i--sniffing-.html">part I</a> of this blog, we discussed how to inspect the sending of Mach messages in kernel-mode perspective. In part II, I will continue to define how to inspect received Mach messages by setting up a kernel inline hook. Let’s get started!</p>
+<p><b>Receiving Mach messages</b></p>
+<p>As mentioned in Part I, in the section “Messaging Implementation”, the functions mach_msg() and mach_msg_overwrite() can also both be used to receive Mach message. Let’s take a look at their execution flow:</p>
+
+
+</div>
+<div class="cmp cmp-image aem-GridColumn--default--none aem-GridColumn aem-GridColumn--default--11 aem-GridColumn--offset--default--1">
+
+    
+        <img alt="Fortinet FortiGuard Labs Threat Research" src="./Analysis_ Inspecting Mach Messages in macOS Kernel-Mode Part II_ Sniffing the received Mach messages_files/kai-01.png" class="">
+    
+    <span class="cmp-image--title">Figure 1. Receiving the Mach message</span>
+
+
+    
+
+</div>
+<div class="cmp cmp-text aem-GridColumn aem-GridColumn--default--12">
+  <p>You can read the source code of the function mach_msg_overwrite_trap(), which is implemented in xnu-4570.71.2/osfmk/ipc/mach_msg.c. The function mach_msg_overwrite_trap() can invoke the function mach_msg_receive_results() to receive a Mach message. The following is a code snippet that handles received messages in the function mach_msg_overwrite_trap():</p>
+
+
+</div>
+<div class="cmp cmp-image aem-GridColumn--default--none aem-GridColumn aem-GridColumn--default--10 aem-GridColumn--offset--default--1">
+
+    
+        <img alt="Fortinet FortiGuard Labs Threat Research" src="https://www.fortinet.com/blog/threat-research/inspect-mach-messages-in-macos-kernel-mode--part-ii--sniffing-th/_jcr_content/root/responsivegrid/image_451955050.img.png/1540513738413/kai-02.png" class="">
+    
+    <span class="cmp-image--title">Figure 2. A code snippet that handles the received messages in the function mach_msg_overwrite_trap()</span>
+
+
+    
+
+</div>
+<div class="cmp cmp-text aem-GridColumn aem-GridColumn--default--12">
+  <p>The definition of the function mach_msg_receive_results() is shown below:</p>
+
+
+</div>
+<div class="cmp cmp-image aem-GridColumn aem-GridColumn--default--12">
+
+    
+        <img alt="Fortinet FortiGuard Labs Threat Research" src="https://www.fortinet.com/blog/threat-research/inspect-mach-messages-in-macos-kernel-mode--part-ii--sniffing-th/_jcr_content/root/responsivegrid/image_57868483.img.png/1540525993663/kai-03.png" class="">
+    
+    <span class="cmp-image--title">Figure 3.  The definition of the function mach_msg_receive_results()</span>
+
+
+    
+
+</div>
+<div class="cmp cmp-text aem-GridColumn aem-GridColumn--default--12">
+  <p>We can see that this function first invokes the function current_thread(), which returns a pointer to the <b><i>thread </i></b>structure. The <a href="https://opensource.apple.com/source/xnu/xnu-4570.71.2/osfmk/kern/thread.h.auto.html"><b><i>thread</i></b></a> structure is defined in xnu-4570.71.2/osfmk/kern/thread.h. It contains many fields, so we need to find the field that stores the received message.&nbsp;</p>
+
+
+</div>
+<div class="cmp cmp-image aem-GridColumn aem-GridColumn--default--12">
+
+    
+        <img alt="Fortinet FortiGuard Labs Threat Research" src="https://www.fortinet.com/blog/threat-research/inspect-mach-messages-in-macos-kernel-mode--part-ii--sniffing-th/_jcr_content/root/responsivegrid/image_1696090605.img.png/1540513808714/kai-04.png" class="">
+    
+    <span class="cmp-image--title">Figure 4. The field that stores the received message in the thread structure</span>
+
+
+    
+
+</div>
+<div class="cmp cmp-text aem-GridColumn aem-GridColumn--default--12">
+  <p>We can see here that the field saved.receive.kmsg of the <b><i>thread</i></b> structure stores the received message.</p>
+<p>The following are some macro definitions related to the received message in xnu-4570.71.2/osfmk/kern/thread.h:</p>
+
+
+</div>
+<div class="cmp cmp-image aem-GridColumn--default--none aem-GridColumn aem-GridColumn--default--10 aem-GridColumn--offset--default--1">
+
+    
+        <img alt="Fortinet FortiGuard Labs Threat Research" src="https://www.fortinet.com/blog/threat-research/inspect-mach-messages-in-macos-kernel-mode--part-ii--sniffing-th/_jcr_content/root/responsivegrid/image_1297539142.img.png/1540513841249/kai-05.png" class="">
+    
+    <span class="cmp-image--title">Figure 5. The macro definitions related to the received message</span>
+
+
+    
+
+</div>
+<div class="cmp cmp-text aem-GridColumn aem-GridColumn--default--12">
+  <p>Going back to Figure 3, the code “self-&gt;ith_kmsg” is used to get a pointer to the ipc_kmsg structure that stores the received Mach message.&nbsp; So we need to implement an inline hook on the function mach_msg_receive_results(),get a reference of the ipc_kmsg structure, and then record the received Mach message. &nbsp;</p>
+<p><b>Kernel Inline Hooking</b></p>
+<p>Let’s go into the assembly world of the function mach_msg_receive_results():</p>
+
+
+</div>
+<div class="cmp cmp-image aem-GridColumn aem-GridColumn--default--12">
+
+    
+        <img alt="Fortinet FortiGuard Labs Threat Research" src="https://www.fortinet.com/blog/threat-research/inspect-mach-messages-in-macos-kernel-mode--part-ii--sniffing-th/_jcr_content/root/responsivegrid/image_1213598564.img.png/1540513878962/kai-06.png" class="">
+    
+    <span class="cmp-image--title">Figure 6. The assembly of the function mach_msg_receive_results()</span>
+
+
+    
+
+</div>
+<div class="cmp cmp-text aem-GridColumn aem-GridColumn--default--12">
+  <p>We can see that the function starts with a prologue. Here I used the following inline hook with a length of 12 bytes.</p>
+
+
+</div>
+<div class="cmp cmp-image aem-GridColumn aem-GridColumn--default--12">
+
+    
+        <img alt="Fortinet FortiGuard Labs Threat Research" src="https://www.fortinet.com/blog/threat-research/inspect-mach-messages-in-macos-kernel-mode--part-ii--sniffing-th/_jcr_content/root/responsivegrid/image_2120076253.img.png/1540513913817/kai-07.png" class="">
+    
+    <span class="cmp-image--title">Figure 7. The inline hooking instructions for the function mach_msg_receive_results()</span>
+
+
+    
+
+</div>
+<div class="cmp cmp-text aem-GridColumn aem-GridColumn--default--12">
+  <p>Let’s look at the assembly instructions of the hooked mach_msg_receive_results(). It is able to jump to the memory address 0xFFFFFF7F9BE6B100, which is actually the address of its trampoline.</p>
+
+
+</div>
+<div class="cmp cmp-image aem-GridColumn aem-GridColumn--default--12">
+
+    
+        <img alt="Fortinet FortiGuard Labs Threat Research" src="https://www.fortinet.com/blog/threat-research/inspect-mach-messages-in-macos-kernel-mode--part-ii--sniffing-th/_jcr_content/root/responsivegrid/image_546945866.img.png/1540513958437/kai-08.png" class="">
+    
+    <span class="cmp-image--title">Figure 8. The hooked mach_msg_receive_results()</span>
+
+
+    
+
+</div>
+<div class="cmp cmp-text aem-GridColumn aem-GridColumn--default--12">
+  <p>So far, we have picked the opcode instructions for inline hooking. We next need to construct the trampolines. The following is the trampoline of hooking mach_msg_receive_results().</p>
+
+
+</div>
+<div class="cmp cmp-image aem-GridColumn aem-GridColumn--default--12">
+
+    
+        <img alt="Fortinet FortiGuard Labs Threat Research" src="https://www.fortinet.com/blog/threat-research/inspect-mach-messages-in-macos-kernel-mode--part-ii--sniffing-th/_jcr_content/root/responsivegrid/image_1802670306.img.png/1540513991291/kai-09.png" class="">
+    
+    <span class="cmp-image--title">Figure 9. The trampoline of hooking mach_msg_receive_results()</span>
+
+
+    
+
+</div>
+<div class="cmp cmp-text aem-GridColumn aem-GridColumn--default--12">
+  <p>The first 12 bytes of instructions are copied from the prologue of the function mach_msg_receive_results(). In this trampoline, it first executes the prologue of the target function, and it then invokes its handler that is used to log the received Mach messages. Finally, it jumps back to the target function to execute the remaining instructions. Let’s calculate the indirect jumping address:</p>
+
+
+</div>
+<div class="cmp cmp-image aem-GridColumn--default--none aem-GridColumn aem-GridColumn--default--10 aem-GridColumn--offset--default--1">
+
+    
+        <img alt="Fortinet FortiGuard Labs Threat Research" src="https://www.fortinet.com/blog/threat-research/inspect-mach-messages-in-macos-kernel-mode--part-ii--sniffing-th/_jcr_content/root/responsivegrid/image_108817550.img.png/1540514024487/kai-010.png" class="">
+    
+    <span class="cmp-image--title">Figure 10. Calculating the indirect jumping address</span>
+
+
+    
+
+</div>
+<div class="cmp cmp-text aem-GridColumn aem-GridColumn--default--12">
+  <p>We can see that the trampoline finally jumps to 0xffffff801816f07c(mach_msg_receive_results+12) to execute its instructions.</p>
+<p>Next, let’s dive into the handler(mach_msg_receive_results_prologue_handler). The following is a snippet of the function mach_msg_receive_results_prologue_handler().</p>
+
+
+</div>
+<div class="cmp cmp-image aem-GridColumn aem-GridColumn--default--12">
+
+    
+        <img alt="Fortinet FortiGuard Labs Threat Research" src="https://www.fortinet.com/blog/threat-research/inspect-mach-messages-in-macos-kernel-mode--part-ii--sniffing-th/_jcr_content/root/responsivegrid/image_1612500752.img.png/1540514058828/kai-011.png" class="">
+    
+    <span class="cmp-image--title">Figure 11. The code snippet of the function mach_msg_receive_results_prologue_handler()</span>
+
+
+    
+
+</div>
+<div class="cmp cmp-text aem-GridColumn aem-GridColumn--default--12">
+  <p>It first gets a pointer to the current thread structure from gs:0x8. The field saved.receive.kmsg in the <b><i>thread</i></b> structure is located at offset 0x2E0. The field saved.receive.state in the thread structure is located at offset 0x2B0. This information allows us to get the pointer to the ipc_kmsg structure and the received state via their corresponding offsets. Once we get the ipc_kmsg structure, we can parse and record the received Mach messages. The variable recv_state represents the state of receiving a Mach message.</p>
+<p>So far, we defined how to sniff the received Mach messages by implementing an inline hook of the function mach_msg_receive_results().</p>
+<p>Finally, the following picture depicts the workflow of the kernel inline hooking.</p>
+
+
+</div>
+<div class="cmp cmp-image aem-GridColumn--default--none aem-GridColumn aem-GridColumn--default--11 aem-GridColumn--offset--default--1">
+
+    
+        <img alt="Fortinet FortiGuard Labs Threat Research" src="https://www.fortinet.com/blog/threat-research/inspect-mach-messages-in-macos-kernel-mode--part-ii--sniffing-th/_jcr_content/root/responsivegrid/image_1989192180.img.png/1540514097252/kai-012.png" class="">
+    
+    <span class="cmp-image--title">Figure 12. The workflow of the kernel inline hooking</span>
+
+
+    
+
+</div>
+<div class="cmp cmp-text aem-GridColumn aem-GridColumn--default--12">
+  <p><b>Sniffing the Mach Messages</b></p>
+<p>In the previous sections, I detailed the implementation of inline hooking for the function mach_msg_receive_results(). In this section, I will present the sniffed received Mach message. It can record a detailed structure of Mach messages sent by a specific process. Some screenshots are shown below:</p>
+
+
+</div>
+<div class="cmp cmp-image aem-GridColumn aem-GridColumn--default--12">
+
+    
+        <img alt="Fortinet FortiGuard Labs Threat Research" src="https://www.fortinet.com/blog/threat-research/inspect-mach-messages-in-macos-kernel-mode--part-ii--sniffing-th/_jcr_content/root/responsivegrid/image_582740757.img.png/1540514128999/kai-013.png" class="">
+    
+    <span class="cmp-image--title">Figure 13. The process WindowServer successfully receives a Mach message </span>
+
+
+    
+
+</div>
+<div class="cmp cmp-image aem-GridColumn aem-GridColumn--default--12">
+
+    
+        <img alt="Fortinet FortiGuard Labs Threat Research" src="https://www.fortinet.com/blog/threat-research/inspect-mach-messages-in-macos-kernel-mode--part-ii--sniffing-th/_jcr_content/root/responsivegrid/image_1593210782.img.png/1540514152107/kai-014.png" class="">
+    
+    <span class="cmp-image--title">Figure 14. The process logd successfully receives a Mach message </span>
+
+
+    
+
+</div>
+<div class="cmp cmp-image aem-GridColumn aem-GridColumn--default--12">
+
+    
+        <img alt="Fortinet FortiGuard Labs Threat Research" src="https://www.fortinet.com/blog/threat-research/inspect-mach-messages-in-macos-kernel-mode--part-ii--sniffing-th/_jcr_content/root/responsivegrid/image_863769445.img.png/1540514182032/kai-015.png" class="">
+    
+    <span class="cmp-image--title">Figure 15. The process opendirectoryd successfully receives a Mach message </span>
+
+
+    
+
+</div>
+<div class="cmp cmp-image aem-GridColumn--default--none aem-GridColumn aem-GridColumn--default--8 aem-GridColumn--offset--default--2">
+
+    
+        <img alt="Fortinet FortiGuard Labs Threat Research" src="https://www.fortinet.com/blog/threat-research/inspect-mach-messages-in-macos-kernel-mode--part-ii--sniffing-th/_jcr_content/root/responsivegrid/image_588604060.img.png/1540514201424/kai-016.png" class="">
+    
+    <span class="cmp-image--title">Figure 16. The process WindowServer fails to receive a Mach message due to MACH_RCV_TIMED_OUT</span>
+
+
+    
+
+</div>
+<div class="cmp cmp-text aem-GridColumn aem-GridColumn--default--12">
+  <p><b>Conclusion</b></p>
+<p>In this blog, I presented how to sniff the received Mach message by setting up a kernel inline hook for the function mach_msg_receive_results(). It’s able to record all fields of the ipc_kmsg structure and every field of a Mach message. Implementing some kernel inline hooks on kernel APIs is a very interesting project. You can do a ton of fascinating things by setting up some inline hooks on specific kernel APIs, depending on your interests. The only limit is your imagination!</p>
+<p><i>Note: All hooks were set up in macOS High Sierra 10.13.6 (17G65). For the latest OS version, macOS Mojave 10.14, you might need to tweak some hard-coded offsets. It’s easy to get the correct offsets through some reverse engineering.</i></p>
+<p><a href="https://secure.fortinet.com/LP=5223?utm_source=social&amp;utm_medium=blog&amp;utm_campaign=GEN-WP-Q2-2018-Threat-Landscape-Report&amp;elq_src=Social&amp;elq_cid=70134000001T67JAAS&amp;elq_staid=10&amp;elq_eid=11694&amp;elq_sid=13232"><i>Download</i></a><i>&nbsp;our latest Fortinet Global Threat Landscape Report to find out more detail about recent threat landscape trends.</i></p>
+<p><a href="https://www.fortinet.com/fortiguard/threat-intelligence/threat-research.html?utm_source=nreleaseblog&amp;utm_campaign=2018-q2-fortiguardlabs-cta"><i>Sign up</i></a><i>&nbsp;for our weekly FortiGuard Threat Brief.</i></p>
+<p><i>Know your vulnerabilities – get the facts about your network security.&nbsp;A&nbsp;<a href="https://www.fortinet.com/offers/cyber-threat-assessment.html?utm_source=blog&amp;utm_campaign=2018-q4-ctap-assessment">Fortinet Cyber Threat Assessment</a>&nbsp;can help you better understand:&nbsp;Security and Threat Prevention,&nbsp;User Productivity, and&nbsp;Network Utilization and Performance.</i></p>
+<p><b><i>&nbsp;</i></b></p>
+
+
+</div>
+<div class="raw-import aem-GridColumn aem-GridColumn--default--12">
+<div class="text-container"><div id="om-qxx1b0gslklfu2kjckea-holder"><style data-styled="true" data-styled-version="5.0.1"></style><div id="om-qxx1b0gslklfu2kjckea" class="Campaign CampaignType--inline " style="display: block; background: none; border: 0px; border-radius: 0px; float: none; letter-spacing: normal; outline: none; text-decoration: none; text-indent: 0px; text-shadow: none; text-transform: none; visibility: visible; line-height: 1; font-family: helvetica, arial, san-serif; box-shadow: none; -webkit-font-smoothing: antialiased; -webkit-appearance: none;"><div id="om-qxx1b0gslklfu2kjckea-optin" class="orlando Campaign__canvas" style="display: block;"><div class="Campaign__innerWrapper" style="position:relative"><div class="Campaign__alphaLayer" style="background:rgba(255, 255, 255, 0);border-top-width:1px;border-right-width:1px;border-bottom-width:1px;border-left-width:1px;border-color:rgba(177, 186, 203, 0);border-style:none;border-top-left-radius:3px;border-top-right-radius:3px;border-bottom-right-radius:3px;border-bottom-left-radius:3px;position:relative;z-index:2"><div class="Campaign__bravoLayer"><div class="Campaign__content" style="background:none;position:relative;padding:20px;text-align:center;margin:0 auto;max-width:100%;width:100%;white-space:normal;padding-top:5px;padding-right:5px;padding-left:5px;padding-bottom:5px"><style type="text/css">html div#om-qxx1b0gslklfu2kjckea .orlando applet,html div#om-qxx1b0gslklfu2kjckea .orlando object,html div#om-qxx1b0gslklfu2kjckea .orlando div:not(.Campaign__content):not(.Row__content):not(.Column__content):not(.Element__content),html div#om-qxx1b0gslklfu2kjckea .orlando span,html div#om-qxx1b0gslklfu2kjckea .orlando iframe,html div#om-qxx1b0gslklfu2kjckea .orlando h1,html div#om-qxx1b0gslklfu2kjckea .orlando h2,html div#om-qxx1b0gslklfu2kjckea .orlando h3,html div#om-qxx1b0gslklfu2kjckea .orlando h4,html div#om-qxx1b0gslklfu2kjckea .orlando h5,html div#om-qxx1b0gslklfu2kjckea .orlando h6,html div#om-qxx1b0gslklfu2kjckea .orlando p,html div#om-qxx1b0gslklfu2kjckea .orlando blockquote,html div#om-qxx1b0gslklfu2kjckea .orlando pre,html div#om-qxx1b0gslklfu2kjckea .orlando a,html div#om-qxx1b0gslklfu2kjckea .orlando abbr,html div#om-qxx1b0gslklfu2kjckea .orlando acronym,html div#om-qxx1b0gslklfu2kjckea .orlando address,html div#om-qxx1b0gslklfu2kjckea .orlando big,html div#om-qxx1b0gslklfu2kjckea .orlando cite,html div#om-qxx1b0gslklfu2kjckea .orlando code,html div#om-qxx1b0gslklfu2kjckea .orlando del,html div#om-qxx1b0gslklfu2kjckea .orlando dfn,html div#om-qxx1b0gslklfu2kjckea .orlando em,html div#om-qxx1b0gslklfu2kjckea .orlando img,html div#om-qxx1b0gslklfu2kjckea .orlando ins,html div#om-qxx1b0gslklfu2kjckea .orlando kbd,html div#om-qxx1b0gslklfu2kjckea .orlando q,html div#om-qxx1b0gslklfu2kjckea .orlando s,html div#om-qxx1b0gslklfu2kjckea .orlando samp,html div#om-qxx1b0gslklfu2kjckea .orlando small,html div#om-qxx1b0gslklfu2kjckea .orlando strike,html div#om-qxx1b0gslklfu2kjckea .orlando strong,html div#om-qxx1b0gslklfu2kjckea .orlando sub,html div#om-qxx1b0gslklfu2kjckea .orlando sup,html div#om-qxx1b0gslklfu2kjckea .orlando tt,html div#om-qxx1b0gslklfu2kjckea .orlando var,html div#om-qxx1b0gslklfu2kjckea .orlando b,html div#om-qxx1b0gslklfu2kjckea .orlando u,html div#om-qxx1b0gslklfu2kjckea .orlando center,html div#om-qxx1b0gslklfu2kjckea .orlando dl,html div#om-qxx1b0gslklfu2kjckea .orlando dt,html div#om-qxx1b0gslklfu2kjckea .orlando dd,html div#om-qxx1b0gslklfu2kjckea .orlando ol,html div#om-qxx1b0gslklfu2kjckea .orlando ul,html div#om-qxx1b0gslklfu2kjckea .orlando li,html div#om-qxx1b0gslklfu2kjckea .orlando fieldset,html div#om-qxx1b0gslklfu2kjckea .orlando form,html div#om-qxx1b0gslklfu2kjckea .orlando label,html div#om-qxx1b0gslklfu2kjckea .orlando legend,html div#om-qxx1b0gslklfu2kjckea .orlando table,html div#om-qxx1b0gslklfu2kjckea .orlando caption,html div#om-qxx1b0gslklfu2kjckea .orlando tbody,html div#om-qxx1b0gslklfu2kjckea .orlando tfoot,html div#om-qxx1b0gslklfu2kjckea .orlando thead,html div#om-qxx1b0gslklfu2kjckea .orlando tr,html div#om-qxx1b0gslklfu2kjckea .orlando th,html div#om-qxx1b0gslklfu2kjckea .orlando td,html div#om-qxx1b0gslklfu2kjckea .orlando article,html div#om-qxx1b0gslklfu2kjckea .orlando aside,html div#om-qxx1b0gslklfu2kjckea .orlando canvas,html div#om-qxx1b0gslklfu2kjckea .orlando details,html div#om-qxx1b0gslklfu2kjckea .orlando embed,html div#om-qxx1b0gslklfu2kjckea .orlando figure,html div#om-qxx1b0gslklfu2kjckea .orlando figcaption,html div#om-qxx1b0gslklfu2kjckea .orlando footer,html div#om-qxx1b0gslklfu2kjckea .orlando header,html div#om-qxx1b0gslklfu2kjckea .orlando hgroup,html div#om-qxx1b0gslklfu2kjckea .orlando menu,html div#om-qxx1b0gslklfu2kjckea .orlando nav,html div#om-qxx1b0gslklfu2kjckea .orlando output,html div#om-qxx1b0gslklfu2kjckea .orlando ruby,html div#om-qxx1b0gslklfu2kjckea .orlando section,html div#om-qxx1b0gslklfu2kjckea .orlando summary,html div#om-qxx1b0gslklfu2kjckea .orlando time,html div#om-qxx1b0gslklfu2kjckea .orlando mark,html div#om-qxx1b0gslklfu2kjckea .orlando audio,html div#om-qxx1b0gslklfu2kjckea .orlando video,html div#om-qxx1b0gslklfu2kjckea .orlando i:not(.fa){margin: 0;padding: 0;border: 0;font-size: 100%;font: inherit;vertical-align: baseline;}html div#om-qxx1b0gslklfu2kjckea .orlando div.Campaign__content, html div#om-qxx1b0gslklfu2kjckea .orlando div.Row__content, html div#om-qxx1b0gslklfu2kjckea .orlando div.Column__content, html div#om-qxx1b0gslklfu2kjckea .orlando div.Element__content{margin: 0;border: 0;font-size: 100%;font: inherit;vertical-align: baseline;}</style><style type="text/css">
+		html div#om-qxx1b0gslklfu2kjckea .orlando *{box-sizing:border-box}
+		html div#om-qxx1b0gslklfu2kjckea .orlando .Element__content {min-height: 30px}
+		html div#om-qxx1b0gslklfu2kjckea .orlando button {width: auto;}
+	
+	html div#om-qxx1b0gslklfu2kjckea .orlando-FieldsElement--wrapper input:not([type="submit"]),
+	html div#om-qxx1b0gslklfu2kjckea .orlando-FieldsElement--wrapper select,
+	html div#om-qxx1b0gslklfu2kjckea .orlando-FieldsElement--wrapper textarea {
+		background-color: #fff;
+		width: 100%;
+		height: auto;
+		border: 1px solid;
+		padding: 10px 6px;
+		overflow: hidden;
+		margin: 0;
+		vertical-align: middle;
+		font-style: normal;
+		width: 100%;
+		line-height: 1.5
+	}
+
+	html div#om-qxx1b0gslklfu2kjckea .orlando-FieldsElement--wrapper textarea {
+		height: 60px;
+	}
+
+	html div#om-qxx1b0gslklfu2kjckea .orlando-FieldsElement--wrapper textarea,
+	html div#om-qxx1b0gslklfu2kjckea .orlando-FieldsElement--wrapper input {
+		overflow: hidden;
+		-webkit-appearance: none;
+	}
+
+	html div#om-qxx1b0gslklfu2kjckea .orlando-FieldsElement--wrapper input[type=submit],
+	html div#om-qxx1b0gslklfu2kjckea .orlando-FieldsElement--wrapper button {
+		cursor: pointer;
+	}
+
+	html div#om-qxx1b0gslklfu2kjckea .orlando-FieldsElement--wrapper input[type=checkbox],
+	html div#om-qxx1b0gslklfu2kjckea .orlando-FieldsElement--wrapper input[type=radio] {
+		width: auto !important;
+		outline: invert none medium;
+		padding: 0;
+		margin: 0;
+		height: auto !important;
+		box-shadow: none;
+		-webkit-box-shadow: none;
+		-moz-box-shadow: none;
+		display: inline;
+	}
+
+	html div#om-qxx1b0gslklfu2kjckea .orlando-FieldsElement--wrapper input[type=checkbox] {
+		-webkit-appearance: checkbox;
+	}
+
+	html div#om-qxx1b0gslklfu2kjckea .orlando-FieldsElement--wrapper input[type=radio] {
+		-webkit-appearance: radio;
+	}
+	html div#om-qxx1b0gslklfu2kjckea .orlando-FieldsElement--wrapper.FieldsElement--vertical input {
+
+	}
+	html div#om-qxx1b0gslklfu2kjckea .orlando-FieldsElement--wrapper.FieldsElement--horizontal input,
+	html div#om-qxx1b0gslklfu2kjckea .orlando-FieldsElement--wrapper.FieldsElement--horizontal button {
+
+	}
+	html div#om-qxx1b0gslklfu2kjckea .orlando-FieldsElement--wrapper.FieldsElement--horizontal .FieldsElement--privacyText {
+
+	}
+	html div#om-qxx1b0gslklfu2kjckea .orlando-FieldsElement--wrapper strong {
+		font-weight: bolder;
+	}
+	html div#om-qxx1b0gslklfu2kjckea .orlando-FieldsElement--wrapper em {
+		font-style: italic;
+	}
+	html div#om-qxx1b0gslklfu2kjckea .orlando-FieldsElement--wrapper ul {
+		list-style-type: disc;
+		margin: 1em 0 1em 1.5em;
+	}
+	html div#om-qxx1b0gslklfu2kjckea .orlando-FieldsElement--wrapper ol {
+		list-style: decimal;
+		margin: 1em 0 1em 1.5em;
+	}
+
+	html div#om-qxx1b0gslklfu2kjckea .orlando-FieldsElement--wrapper sup {
+	top: -0.5em;
+	}
+
+	html div#om-qxx1b0gslklfu2kjckea .orlando-FieldsElement--wrapper sub {
+	bottom: -0.5em;
+	}
+
+	html div#om-qxx1b0gslklfu2kjckea .orlando-FieldsElement--wrapper sub,
+	html div#om-qxx1b0gslklfu2kjckea .orlando-FieldsElement--wrapper sup {
+		font-size: 75%;
+		line-height: 0;
+		position: relative;
+		vertical-align: baseline;
+	}
+
+	html div#om-qxx1b0gslklfu2kjckea .orlando-FieldsElement--wrapper p {
+		margin: 0 0 5px;
+		font-weight: inherit !important;
+		line-height: inherit !important;
+		letter-spacing: inherit !important;
+		text-transform: inherit !important;
+	}
+	html div#om-qxx1b0gslklfu2kjckea .orlando-FieldsElement--wrapper p:first-of-type {
+		margin-top: 0;
+	}
+	html div#om-qxx1b0gslklfu2kjckea .orlando-FieldsElement--wrapper p:last-of-type {
+		margin-bottom: 0;
+	}
+	
+	html div#om-qxx1b0gslklfu2kjckea .orlando-TextElement--content strong {
+		font-weight: bolder;
+	}
+	html div#om-qxx1b0gslklfu2kjckea .orlando-TextElement--content em {
+		font-style: italic;
+	}
+	html div#om-qxx1b0gslklfu2kjckea .orlando-TextElement--content ul {
+		list-style-type: disc;
+		margin: 1em 0 1em 1.5em;
+	}
+	html div#om-qxx1b0gslklfu2kjckea .orlando-TextElement--content ol {
+		list-style: decimal;
+		margin: 1em 0 1em 1.5em;
+	}
+
+	html div#om-qxx1b0gslklfu2kjckea .orlando-TextElement--content sup {
+		top: -0.5em;
+	}
+
+	html div#om-qxx1b0gslklfu2kjckea .orlando-TextElement--content sub {
+		bottom: -0.5em;
+	}
+
+	html div#om-qxx1b0gslklfu2kjckea .orlando-TextElement--content sub,
+	html div#om-qxx1b0gslklfu2kjckea .orlando-TextElement--content sup {
+		font-size: 75%;
+		line-height: 0;
+		position: relative;
+		vertical-align: baseline;
+	}
+
+	html div#om-qxx1b0gslklfu2kjckea .orlando-TextElement--content p {
+		margin: 0 0 5px;
+		font-weight: inherit !important;
+		line-height: inherit !important;
+		letter-spacing: inherit !important;
+		text-transform: inherit !important;
+	}
+	html div#om-qxx1b0gslklfu2kjckea .orlando-TextElement--content p:first-of-type {
+		margin-top: 0;
+	}
+	html div#om-qxx1b0gslklfu2kjckea .orlando-TextElement--content p:last-of-type {
+		margin-bottom: 0;
+	}
+
+	@media screen and (min-width: 1px) and (max-width: 720px) {
+		html div#om-qxx1b0gslklfu2kjckea .orlando-ClosePosition--top-right { right: 0 !important }
+		html div#om-qxx1b0gslklfu2kjckea .orlando-ClosePosition--top-left { left: 0 !important }
+		html div#om-qxx1b0gslklfu2kjckea .orlando-ClosePosition--bottom-right { right: 0 !important }
+		html div#om-qxx1b0gslklfu2kjckea .orlando-ClosePosition--bottom-left { left: 0 !important }
+
+		html div#om-qxx1b0gslklfu2kjckea .Row .Row__content { flex-direction: column; }
+		html div#om-qxx1b0gslklfu2kjckea .Row .Row__content .Column { width: 100% !important; }
+
+		html div#om-qxx1b0gslklfu2kjckea .FieldsElement--horizontal input,
+		html div#om-qxx1b0gslklfu2kjckea .FieldsElement--horizontal button {
+			width: 100% !important;
+		}
+	}@media screen and (min-width: 1px) and (max-width: 400px) {}</style><style type="text/css"></style><div class="Row"><div class="Row__content"><div style="display:flex;width:100%;flex-direction:inherit;background:transparent;border-style:solid;border-width:0px;border-color:#000000;border-top-left-radius:0%;border-top-right-radius:0%;border-bottom-right-radius:0%;border-bottom-left-radius:0%;border-top-width:0;border-right-width:0;border-bottom-width:0;border-left-width:0;padding-top:0;padding-right:0;padding-bottom:0;padding-left:0;margin-top:0;margin-right:0;margin-bottom:0;margin-left:0;box-shadow:0px 0px 0px 0px #ffffff;max-width:100%"><div class="Column" style="display:inline-block;width:100%"><div class="Column__content" style="height:100%"><div style="background:transparent;border-style:solid;border-width:0px;border-color:#000000;border-top-left-radius:0%;border-top-right-radius:0%;border-bottom-right-radius:0%;border-bottom-left-radius:0%;border-top-width:0;border-right-width:0;border-bottom-width:0;border-left-width:0;padding-top:0;padding-right:0;padding-bottom:0;padding-left:0;margin-top:0;margin-right:0;margin-bottom:0;margin-left:0;box-shadow:0px 0px 0px 0px #ffffff;max-width:100%;height:100%"><div class="Element"><div class="Element__content"><div class="orlando-ImageElement--wrapper NOA68zw4eogCfFPGqacc" style="background:transparent;border-style:none;border-width:0px;border-color:rgba(0, 0, 0, 0);border-top-left-radius:0%;border-top-right-radius:0%;border-bottom-right-radius:0%;border-bottom-left-radius:0%;border-top-width:0;border-right-width:0;border-bottom-width:0;border-left-width:0;padding-top:0px;padding-right:0px;padding-bottom:0px;padding-left:0px;margin-top:0px;margin-right:0px;margin-bottom:0px;margin-left:0px;box-shadow:0px 0px 0px 0px #ffffff;width:auto;max-width:100%;position:relative;overflow:visible;text-align:left;font-size:0"><div class="orlando-ImageElement--content"><a href="https://www.fortinet.com/resources-campaign/ciso/beating-the-cybersecurity-skills-shortage-and-managing-the-gaps-2" target="_blank" class="om-trigger-conversion"><img style="max-width:100%;display:inline;border-style:none;border-color:rgba(255, 255, 255, 0);border-top-left-radius:0px;border-top-right-radius:0px;border-bottom-right-radius:0px;border-bottom-left-radius:0px;border-top-width:0px;border-right-width:0px;border-bottom-width:0px;border-left-width:0px;box-shadow:0px 0px 0px 0px #ffffff;opacity:1;width:100%" src="./Analysis_ Inspecting Mach Messages in macOS Kernel-Mode Part II_ Sniffing the received Mach messages_files/654a727ff5051585246332-skillsgap-banner.jpg" alt="Closing the Cybersecurity Skills Gap"></a></div></div></div></div></div></div></div></div></div></div><div style="display:none"></div></div></div></div></div></div></div></div></div>
+</div>
+
+    
+</div>
+</div>
+<div class="b16-blog-tags aem-GridColumn aem-GridColumn--default--12">
+
+
+
+<div class="b16-blog-tags__container text-container">
+  <span class="b16-blog-tags__headline">Tags:</span>
+  <p class="b16-blog-tags__tag-links">
+    <a href="https://www.fortinet.com/blog/tags-search.html?tag=mac-os">Mac OS</a>
+  </p>
+</div>
+</div>
+<section class="b12-related aem-GridColumn aem-GridColumn--default--12">
+
+
+
+
+<div class="b12-related__container text-container">
+    
+
+    
+    
+    <h3>Related Posts</h3>
+    <div class="b12-related__posts">
+        
+        <a href="https://www.fortinet.com/blog/threat-research/a-look-into-xpc-internals--reverse-engineering-the-xpc-objects" class="b12-related__post b12-related__post-0">
+            <div class="b12-related__image" style="background-image:url(/content/dam/fortinet-blog/article-images/look_into_xpc_internals/look_into_xpc_internals_thumb.jpg.thumb.319.319.png);">
+                <img class="ratio" alt="A Look into XPC Internals: Reverse Engineering the XPC Objects" aria-hidden="true" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAADCAQAAAAe/WZNAAAADklEQVR42mNkgAJGDAYAAFEABCaLYqoAAAAASUVORK5CYII=">
+            </div>
+
+            <div class="b12-related__text">
+                <p class="b12-related__category">
+                    Threat Research
+                </p>
+                <h5 class="b12-related__title">A Look into XPC Internals: Reverse Engineering the XPC Objects</h5>
+            </div>
+        </a>
+    
+    
+        
+        <a href="https://www.fortinet.com/blog/threat-research/monitoring-macos--part-i--monitoring-process-execution-via-macf" class="b12-related__post b12-related__post-1">
+            <div class="b12-related__image" style="background-image:url(/content/dam/fortinet-blog/article-images/monitor-process-execution-via-macf-on-macos/monitorprocess-hero.jpg.thumb.319.319.png);">
+                <img class="ratio" alt="Monitoring macOS, Part I: Monitoring Process Execution via MACF" aria-hidden="true" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAADCAQAAAAe/WZNAAAADklEQVR42mNkgAJGDAYAAFEABCaLYqoAAAAASUVORK5CYII=">
+            </div>
+
+            <div class="b12-related__text">
+                <p class="b12-related__category">
+                    Threat Research
+                </p>
+                <h5 class="b12-related__title">Monitoring macOS, Part I: Monitoring Process Execution via MACF</h5>
+            </div>
+        </a>
+    
+    
+        
+        <a href="https://www.fortinet.com/blog/threat-research/monitor-file-system-events-and-dylib-loading-via-macf-on-macos" class="b12-related__post b12-related__post-2">
+            <div class="b12-related__image" style="background-image:url(/content/dam/fortinet-blog/article-images/monitor-file-system-events-and-dylib-loading-via-macf-on-macos/monitorfile-hero.jpg.thumb.319.319.png);">
+                <img class="ratio" alt="Monitoring macOS, Part II: Monitoring File System Events and Dylib Loading via MACF" aria-hidden="true" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAADCAQAAAAe/WZNAAAADklEQVR42mNkgAJGDAYAAFEABCaLYqoAAAAASUVORK5CYII=">
+            </div>
+
+            <div class="b12-related__text">
+                <p class="b12-related__category">
+                    Threat Research
+                </p>
+                <h5 class="b12-related__title">Monitoring macOS, Part II: Monitoring File System Events and Dylib Loading via MACF</h5>
+            </div>
+        </a>
+    
+    </div>
+</div>
+
+
+</section>
+<div class="b13-comment-section aem-GridColumn aem-GridColumn--default--12">
+
+
+<div class="b13-comment-section__container text-container">
+
+
+  <!--data-sly-test="true - got replaced with false to disable the discussion event-->
+  
+</div>
+</div>
+<div class="b6-footer aem-GridColumn aem-GridColumn--default--12">
+
+
+  
+
+  <div class="b6-footer__container text-container">
+    <div class="b6-footer__footer-info">
+      <div class="b6-footer__logo">
+        <a href="https://www.fortinet.com/" target="_blank">
+          <img src="./Analysis_ Inspecting Mach Messages in macOS Kernel-Mode Part II_ Sniffing the received Mach messages_files/fortinet-logo-white.svg" alt="Fortinet">
+        </a>
+      </div>
+      <div class="b6-footer__social-footer">
+        <ul>
+          
+            <li class="social-icon facebook">
+              <a href="https://www.facebook.com/fortinet" target="_blank">
+                
+    <svg viewBox="0 0 9 18" xmlns="http://www.w3.org/2000/svg">
+        <path d="M8.934.758v3.385H7.24c-.583 0-.845.685-.845 1.27v2.114h2.54v3.385h-2.54v6.77H3.01v-6.77H.472V7.527H3.01V4.143c0-1.87 1.516-3.385 3.385-3.385h2.54z" fill-opacity=".8" fill="#fff" fill-rule="evenodd"></path>
+    </svg>
+
+              </a>
+            </li>
+          
+            <li class="social-icon twitter">
+              <a href="https://www.twitter.com/fortinet" target="_blank">
+                
+    <svg viewBox="0 0 19 15" xmlns="http://www.w3.org/2000/svg">
+        <path d="M18.17 2.296c-.652.296-1.354.49-2.082.584.745-.448 1.32-1.16 1.59-2.014-.702.423-1.48.72-2.3.89-.67-.73-1.61-1.152-2.675-1.152-1.988 0-3.613 1.625-3.613 3.63 0 .288.034.567.093.83-3.012-.153-5.694-1.6-7.48-3.792-.313.534-.49 1.16-.49 1.82 0 1.26.634 2.377 1.616 3.012-.61 0-1.16-.17-1.65-.423v.03c0 1.76 1.25 3.237 2.91 3.567-.31.084-.63.127-.96.127-.23 0-.46-.026-.68-.07.455 1.43 1.784 2.497 3.383 2.52-1.235.984-2.8 1.56-4.51 1.56-.288 0-.575-.018-.863-.05 1.61 1.03 3.52 1.632 5.57 1.632 6.667 0 10.33-5.534 10.33-10.332 0-.16 0-.313-.007-.474.71-.508 1.32-1.15 1.81-1.888z" fill-opacity=".8" fill="#fff" fill-rule="evenodd"></path>
+    </svg>
+
+              </a>
+            </li>
+          
+            <li class="social-icon youtube">
+              <a href="https://www.youtube.com/user/SecureNetworks" target="_blank">
+                
+    <svg viewBox="0 0 18 14" xmlns="http://www.w3.org/2000/svg">
+        <path d="M7.472 11.027V3.412L12.55 7.22l-5.08 3.806zM15.934.787C15.426.62 12.294.45 9.164.45c-3.13 0-6.26.16-6.77.322-1.32.44-1.69 3.4-1.69 6.447 0 3.03.37 6 1.69 6.43.51.17 3.64.33 6.77.33 3.13 0 6.262-.16 6.77-.33 1.32-.43 1.692-3.4 1.692-6.44 0-3.047-.372-6-1.692-6.43z" fill-opacity=".8" fill="#fff" fill-rule="evenodd"></path>
+    </svg>
+
+              </a>
+            </li>
+          
+            <li class="social-icon linkedin">
+              <a href="https://www.linkedin.com/company/fortinet" target="_blank">
+                
+    <svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+        <path d="M15.934 15.835H12.55v-5.712c0-.897-1.008-1.64-1.905-1.64s-1.48.743-1.48 1.64v5.712H5.78V5.68h3.385v1.693c.558-.905 1.996-1.49 2.96-1.49 2.116 0 3.81 1.727 3.81 3.817v6.135zm-11.846 0H.703V5.68h3.385v10.155zM2.395.605c.935 0 1.693.757 1.693 1.69 0 .936-.758 1.694-1.693 1.694S.703 3.23.703 2.29C.703 1.36 1.46.6 2.395.6z" fill-opacity=".8" fill="#fff" fill-rule="evenodd"></path>
+    </svg>
+
+              </a>
+            </li>
+          
+            <li class="social-icon instagram">
+              <a href="https://www.instagram.com/behindthefirewall/" target="_blank">
+                
+    <svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+        <path class="st0" d="M16,3.7c4,0,4.5,0,6.1,0.1c1.5,0.1,2.3,0.3,2.8,0.5c0.7,0.3,1.2,0.6,1.7,1.1c0.5,0.5,0.8,1,1.1,1.7
+          c0.2,0.5,0.4,1.3,0.5,2.8c0.1,1.6,0.1,2.1,0.1,6.1s0,4.5-0.1,6.1c-0.1,1.5-0.3,2.3-0.5,2.8c-0.3,0.7-0.6,1.2-1.1,1.7
+          c-0.5,0.5-1,0.8-1.7,1.1c-0.5,0.2-1.3,0.4-2.8,0.5c-1.6,0.1-2.1,0.1-6.1,0.1s-4.5,0-6.1-0.1c-1.5-0.1-2.3-0.3-2.8-0.5
+          c-0.7-0.3-1.2-0.6-1.7-1.1c-0.5-0.5-0.8-1-1.1-1.7c-0.2-0.5-0.4-1.3-0.5-2.8C3.7,20.5,3.7,20,3.7,16s0-4.5,0.1-6.1
+          c0.1-1.5,0.3-2.3,0.5-2.8C4.6,6.5,4.9,6,5.4,5.4c0.5-0.5,1-0.8,1.7-1.1c0.5-0.2,1.3-0.4,2.8-0.5C11.5,3.7,12,3.7,16,3.7 M16,1
+          c-4.1,0-4.6,0-6.2,0.1C8.2,1.2,7.1,1.4,6.2,1.8c-1,0.4-1.8,0.9-2.7,1.7C2.7,4.4,2.2,5.2,1.8,6.2c-0.4,1-0.6,2-0.7,3.6
+          C1,11.4,1,11.9,1,16c0,4.1,0,4.6,0.1,6.2c0.1,1.6,0.3,2.7,0.7,3.6c0.4,1,0.9,1.8,1.7,2.7c0.8,0.8,1.7,1.3,2.7,1.7
+          c1,0.4,2,0.6,3.6,0.7C11.4,31,11.9,31,16,31s4.6,0,6.2-0.1c1.6-0.1,2.7-0.3,3.6-0.7c1-0.4,1.8-0.9,2.7-1.7c0.8-0.8,1.3-1.7,1.7-2.7
+          c0.4-1,0.6-2,0.7-3.6C31,20.6,31,20.1,31,16s0-4.6-0.1-6.2c-0.1-1.6-0.3-2.7-0.7-3.6c-0.4-1-0.9-1.8-1.7-2.7
+          c-0.8-0.8-1.7-1.3-2.7-1.7c-1-0.4-2-0.6-3.6-0.7C20.6,1,20.1,1,16,1L16,1z" fill-opacity=".8" fill="#fff" fill-rule="evenodd"></path>
+        <path class="st0" d="M16,8.3c-4.3,0-7.7,3.4-7.7,7.7s3.4,7.7,7.7,7.7s7.7-3.4,7.7-7.7S20.3,8.3,16,8.3z M16,21c-2.8,0-5-2.2-5-5
+          s2.2-5,5-5s5,2.2,5,5S18.8,21,16,21z" fill-opacity=".8" fill="#fff" fill-rule="evenodd"></path>
+        <circle class="st0" cx="24" cy="8" r="1.8" fill-opacity=".8" fill="#fff" fill-rule="evenodd"></circle>
+    </svg>
+
+              </a>
+            </li>
+          
+            <li class="social-icon rss">
+              <a href="https://www.fortinet.com/rss-feeds.html" target="_blank">
+                
+    <svg viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
+        <path d="M3.072 17.68c-1.27 0-2.37-1.1-2.37-2.368 0-1.27 1.1-2.37 2.37-2.37s2.37 1.1 2.37 2.37-1.016 2.37-2.37 2.37zM.702.76v2.538c7.955 0 14.386 6.43 14.386 14.385h2.538C17.626 8.336 10.05.76.703.76zm0 5.162V8.46c5.078 0 9.224 4.146 9.224 9.223h2.54c0-6.514-5.248-11.76-11.763-11.76z" fill-opacity=".8" fill="#fff" fill-rule="evenodd"></path>
+    </svg>
+
+              </a>
+            </li>
+          
+        </ul>
+      </div>
+    </div>
+    <div class="b6-footer__footer-links">
+      
+        <div class="b6-footer__footer-links-column">
+          <h4 class="b6-footer__header">News &amp; Articles</h4>
+          <ul>
+            
+              <li>
+                <a href="https://www.fortinet.com/corporate/about-us/newsroom/press-releases.html" target="_self">News Releases</a>
+              </li>
+            
+              <li>
+                <a href="https://www.fortinet.com/corporate/about-us/newsroom/news.html" target="_blank">News Articles</a>
+              </li>
+            
+              <li>
+                <a href="https://www.fortinet.com/corporate/about-us/contact-us/fortinet-trademark-guidelines.html" target="_self">Trademarks</a>
+              </li>
+            
+          </ul>
+        </div>
+      
+        <div class="b6-footer__footer-links-column">
+          <h4 class="b6-footer__header">Security Research</h4>
+          <ul>
+            
+              <li>
+                <a href="https://www.fortinet.com/fortiguard/threat-intelligence/threat-research.html" target="_self">Threat Research</a>
+              </li>
+            
+              <li>
+                <a href="https://fortiguard.com/" target="_self">FortiGuard Labs</a>
+              </li>
+            
+              <li>
+                <a href="https://www.fortinet.com/fortiguard/threat-intelligence/threat-map.html" target="_self">Threat Map</a>
+              </li>
+            
+              <li>
+                <a href="https://secure.fortinet.com/fortiguard" target="_blank">Threat Briefs</a>
+              </li>
+            
+              <li>
+                <a href="https://www.fortinet.com/solutions/ransomware.html" target="_self">Ransomware</a>
+              </li>
+            
+          </ul>
+        </div>
+      
+        <div class="b6-footer__footer-links-column">
+          <h4 class="b6-footer__header">Connect With Us</h4>
+          <ul>
+            
+              <li>
+                <a href="https://www.fortinet.com/content/fortinet-blog/us/en" target="_self">Blog</a>
+              </li>
+            
+              <li>
+                <a href="https://fusecommunity.fortinet.com/" target="_self">Fuse</a>
+              </li>
+            
+          </ul>
+        </div>
+      
+        <div class="b6-footer__footer-links-column">
+          <h4 class="b6-footer__header">Company</h4>
+          <ul>
+            
+              <li>
+                <a href="https://www.fortinet.com/corporate/about-us/about-us.html" target="_blank">About Us</a>
+              </li>
+            
+              <li>
+                <a href="https://www.fortinet.com/corporate/about-us/why-fortinet.html" target="_blank">Why Fortinet</a>
+              </li>
+            
+              <li>
+                <a href="https://www.fortinet.com/corporate/about-us/security-fabric.html" target="_self">Security Fabric</a>
+              </li>
+            
+              <li>
+                <a href="https://www.fortinet.com/corporate/about-us/executive-management.html" target="_self">Exec Mgmt</a>
+              </li>
+            
+              <li>
+                <a href="https://www.fortinet.com/corporate/careers.html" target="_self">Careers</a>
+              </li>
+            
+              <li>
+                <a href="https://www.fortinet.com/corporate/about-us/product-certifications.html" target="_self">Certifications</a>
+              </li>
+            
+              <li>
+                <a href="https://www.fortinet.com/corporate/about-us/events.html" target="_self">Events</a>
+              </li>
+            
+              <li>
+                <a href="https://www.fortinet.com/corporate/about-us/industry-awards.html" target="_self">Industry Awards</a>
+              </li>
+            
+          </ul>
+        </div>
+      
+      <div class="b6-footer__contact-info">
+          <h4 class="b6-footer__header">Contact Us</h4>
+          <ul>
+            <li>(866) 868-3678</li>
+          </ul>
+      </div>
+    </div>
+    <div class="b6-footer__copyright">
+      <div class="b6-footer__copyright-info">
+        <p class="b6-footer__copyright-text">Copyright © 2020 Fortinet, Inc. All Rights Reserved</p>
+          
+              <a class="b6-footer__copyright-link" href="https://www.fortinet.com/corporate/about-us/legal.html" target="_blank">Terms of Services</a>
+          
+              <a class="b6-footer__copyright-link" href="https://www.fortinet.com/corporate/about-us/privacy.html" target="_blank">Privacy Policy</a>
+          
+      </div>
+    </div>
+  </div>
+
+<!-- Launch COnfiguration -->
+
+
+<!-- END Launch COnfiguration --></div>
+
+    
+</div>
+</div>
+
+
+
+    
+    
+
+    
+    
+<script type="text/javascript" src="./Analysis_ Inspecting Mach Messages in macOS Kernel-Mode Part II_ Sniffing the received Mach messages_files/clientlib-base.min.js"></script>
+
+
+
+
+
+    
+
+
+
+
+
+<div id="cookiescript_injected" style="bottom: 0px; display: none;"><div id="cookiescript_wrapper">This site uses cookies. Some are essential to the operation of the site; others help us improve the user experience. By continuing to use the site, you consent to the use of these cookies. To learn more about cookies, please read our <a href="https://www.fortinet.com/corporate/about-us/privacy.html" target="_blank" style="font-family: Arial, sans-serif;">privacy policy</a>.<br><div id="cookiescript_buttons"><div id="cookiescript_accept">Accept</div><div id="cookiescript_readmore" style="display:none !important">Privacy policy</div></div><a href="https://cookie-script.com/" target="_blank" id="cookiescript_link" style="display:none !important">Free cookie consent by cookie-script.com</a><div id="cookiescript_pixel"></div></div></div><!-- Go to www.addthis.com/dashboard to customize your tools --> 
+<script type="text/javascript" src="./Analysis_ Inspecting Mach Messages in macOS Kernel-Mode Part II_ Sniffing the received Mach messages_files/addthis_widget.js" async="async"></script><iframe sandbox="allow-scripts allow-same-origin" title="Adobe ID Syncing iFrame" id="destination_publishing_iframe_fortinet_0" name="destination_publishing_iframe_fortinet_0_name" src="./Analysis_ Inspecting Mach Messages in macOS Kernel-Mode Part II_ Sniffing the received Mach messages_files/dest5.html" class="aamIframeLoaded" style="display: none; width: 0px; height: 0px;"></iframe><div id="_atssh" style="visibility: hidden; height: 1px; width: 1px; position: absolute; top: -9999px; z-index: 100000;"><iframe id="_atssh342" title="AddThis utility frame" style="height: 1px; width: 1px; position: absolute; top: 0px; z-index: 100000; border: 0px; left: 0px;" src="./Analysis_ Inspecting Mach Messages in macOS Kernel-Mode Part II_ Sniffing the received Mach messages_files/saved_resource.html"></iframe></div><style id="service-icons-0"></style><script>_satellite["_runScript1"](function(event, target, Promise) {
+// Hotjar Tracking Code for www.fortinet.com
+    (function(h,o,t,j,a,r){
+        h.hj=h.hj||function(){(h.hj.q=h.hj.q||[]).push(arguments)};
+        h._hjSettings={hjid:1178304,hjsv:6};
+        a=o.getElementsByTagName('head')[0];
+        r=o.createElement('script');r.async=1;
+        r.src=t+h._hjSettings.hjid+j+h._hjSettings.hjsv;
+        a.appendChild(r);
+    })(window,document,'https://static.hotjar.com/c/hotjar-','.js?sv=');
+
+});</script><!-- This site is converting visitors into subscribers and customers with OptinMonster - https://optinmonster.com -->
+<script type="text/javascript" src="./Analysis_ Inspecting Mach Messages in macOS Kernel-Mode Part II_ Sniffing the received Mach messages_files/api.min.js" data-account="45602" data-user="39852" async=""></script>
+<!-- / https://optinmonster.com --><script type="text/javascript">
+    adroll_adv_id = "7OBVBCAQE5FHDPFEAD5T4D";
+    adroll_pix_id = "GIVUJ77KRNF4LOPGYJ6RS5";
+
+    (function () {
+        var _onload = function(){
+            if (document.readyState && !/loaded|complete/.test(document.readyState)){setTimeout(_onload, 10);return}
+            if (!window.__adroll_loaded){__adroll_loaded=true;setTimeout(_onload, 50);return}
+            var scr = document.createElement("script");
+            var host = (("https:" == document.location.protocol) ? "https://s.adroll.com" : "http://a.adroll.com");
+            scr.setAttribute('async', 'true');
+            scr.type = "text/javascript";
+            scr.src = host + "/j/roundtrip.js";
+            ((document.getElementsByTagName('head') || [null])[0] ||
+                document.getElementsByTagName('script')[0].parentNode).appendChild(scr);
+        };
+        if (window.addEventListener) {window.addEventListener('load', _onload, false);}
+        else {window.attachEvent('onload', _onload)}
+    }());
+</script><script>_satellite["_runScript2"](function(event, target, Promise) {
+!function(){function e(){try{var e=_satellite.getVar("mcvID"),t=_satellite.getVar("rsid"),a=_satellite.getVar("languageCode"),n=document.querySelectorAll(["form.eloquaBasic","form.eloquaGated"].join(",")),l=document.createElement("input");l.type="hidden",l.name="mid",l.value=e;var d=document.createElement("input");d.type="hidden",d.name="servertype",d.value=t;var r=document.createElement("input");r.type="hidden",r.name="languagecode",r.value=a;for(var i=0;i<n.length;i++)n[i].appendChild(l),n[i].appendChild(d),n[i].appendChild(r)}catch(u){}}e()}();
+});</script><div id="om-qxgboj2xm7i4uirert5m-holder"></div><div id="om-xpwpvp06n9shcggft6kf-holder"></div><iframe name="_hjRemoteVarsFrame" title="_hjRemoteVarsFrame" id="_hjRemoteVarsFrame" src="./Analysis_ Inspecting Mach Messages in macOS Kernel-Mode Part II_ Sniffing the received Mach messages_files/box-469cf41adb11dc78be68c1ae7f9457a4.html" style="display: none !important; width: 1px !important; height: 1px !important; opacity: 0 !important; pointer-events: none !important;"></iframe></body></html>
